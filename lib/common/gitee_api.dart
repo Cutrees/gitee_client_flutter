@@ -41,6 +41,14 @@ class GiteeApi {
 
   static BaseOptions _buildDioOpt({String url}) => BaseOptions(baseUrl: url);
 
+  String _encodeSegment(String value) => Uri.encodeComponent(value ?? "");
+
+  String _encodeContentsPath(String path) =>
+      (path ?? "").split("/").map(_encodeSegment).join("/");
+
+  Map<String, dynamic> _copyQueryParameters(Map<String, dynamic> queryParameters) =>
+      Map<String, dynamic>.from(queryParameters ?? <String, dynamic>{});
+
   // 在网络请求过程中可能会需要使用当前的context信息，比如在请求失败时
   // 打开一个新路由，而打开新路由需要context信息。
   // GiteeApi([this.context]) {
@@ -135,18 +143,15 @@ class GiteeApi {
   // https://gitee.com/api/v5/users/javakam/received_events
   // ?access_token=0d3738a8c89d2be08927bf53bb8d3bff&page=1&per_page=2
   Future<List<DynamicNews>> receivedEvents({Map<String, dynamic> queryParameters}) async {
-    if (!OAuth().isAuthorized) return null;
+    if (!OAuth().isAuthorized) return <DynamicNews>[];
     final Dio dioV5 = Dio(_buildDioOpt(url: BASE_URL));
     //_setLoggerInterceptor(dioV5);
-    queryParameters.addEntries({MapEntry(ACCESS_TOKEN, OAuth().token())});
-    Response<List> response = await dioV5
-        .get<List>(
-      _NettingPath.receivedEvents.replaceAll("{owner}", Global.profile.user.name ?? ""),
-      queryParameters: queryParameters,
-    )
-        .catchError((e) {
-      print("receivedEvents error -> $e");
-    });
+    final data = _copyQueryParameters(queryParameters);
+    data[ACCESS_TOKEN] = OAuth().token();
+    Response<List> response = await dioV5.get<List>(
+      _NettingPath.receivedEvents.replaceAll("{owner}", _encodeSegment(Global.profile.user.login)),
+      queryParameters: data,
+    );
     return response.data.map((e) => DynamicNews.fromJson(e)).toList();
   }
 
@@ -169,12 +174,13 @@ class GiteeApi {
   // https://gitee.com/api/v5/notifications/messages
   // ?access_token=c382c099d28aa30a569e4b722f579297&page=1&per_page=20&unread=false
   Future<List<NotifyMessages>> messagesAll(bool unread, {Map<String, dynamic> queryParameters}) async {
-    if (!OAuth().isAuthorized) return null;
+    if (!OAuth().isAuthorized) return <NotifyMessages>[];
 
     //unread=true 未读消息 , false 全部消息
-    queryParameters.addEntries({MapEntry("unread", unread)});
-    queryParameters.addEntries({MapEntry(ACCESS_TOKEN, OAuth().token())});
-    Response response = await dioV5.get(_NettingPath.notifyMessages, queryParameters: queryParameters);
+    final data = _copyQueryParameters(queryParameters);
+    data["unread"] = unread;
+    data[ACCESS_TOKEN] = OAuth().token();
+    Response response = await dioV5.get(_NettingPath.notifyMessages, queryParameters: data);
     return (response.data['list'] as List).map((e) => NotifyMessages.fromJson(e)).toList();
   }
 
@@ -182,23 +188,25 @@ class GiteeApi {
   // https://gitee.com/api/v5/notifications/threads
   // ?access_token=533d2c9e8efa969583515b90af7a0664&type=all&page=1&per_page=20&unread=true
   Future<List<Notifications>> notificationsAll(bool unread, {Map<String, dynamic> queryParameters}) async {
-    if (!OAuth().isAuthorized) return null;
+    if (!OAuth().isAuthorized) return <Notifications>[];
 
     //unread=true 未读消息 , false 全部消息
-    queryParameters.addEntries({MapEntry("unread", unread)});
-    queryParameters.addEntries({MapEntry("type", "all")});
-    queryParameters.addEntries({MapEntry(ACCESS_TOKEN, OAuth().token())});
-    Response response = await dioV5.get(_NettingPath.notifications, queryParameters: queryParameters);
+    final data = _copyQueryParameters(queryParameters);
+    data["unread"] = unread;
+    data["type"] = "all";
+    data[ACCESS_TOKEN] = OAuth().token();
+    Response response = await dioV5.get(_NettingPath.notifications, queryParameters: data);
     return (response.data['list'] as List).map((e) => Notifications.fromJson(e)).toList();
   }
 
   // 列出授权用户 star 了的仓库
   // https://gitee.com/api/v5/user/starred?page=1&per_page=20&access_token=f79fa2e25a04a8a1fae131939d40d2dc&sort=created&direction=asc
   Future<List<Repo>> getRepoStarList({int page}) async {
+    if (!OAuth().isAuthorized) return <Repo>[];
     var response = await dioV5.get<List>(
       _NettingPath.starList,
       queryParameters: {
-        "perPage": 20,
+        "per_page": 20,
         "page": page,
         "direction": "asc",
         ACCESS_TOKEN: OAuth().token(),
@@ -211,9 +219,9 @@ class GiteeApi {
   // https://gitee.com/api/v5/users/javakam/repos
   // ?access_token=f79fa2e25a04a8a1fae131939d40d2dc&type=all&sort=full_name&page=1&per_page=20
   Future<List<Repo>> getRepoList(int page) async {
-    if (!OAuth().isAuthorized) return null;
+    if (!OAuth().isAuthorized) return <Repo>[];
     var response = await dioV5.get<List>(
-      _NettingPath.repos.replaceAll("{owner}", Global.profile.user.name ?? ""),
+      _NettingPath.repos.replaceAll("{owner}", _encodeSegment(Global.profile.user.login)),
       queryParameters: {
         "per_page": "20",
         "page": page,
@@ -221,9 +229,7 @@ class GiteeApi {
         "sort": "full_name",
         ACCESS_TOKEN: OAuth().token(),
       },
-    ).catchError((e) {
-      print("getRepoList error -> $e");
-    });
+    );
     return response.data.map((e) => Repo.fromJson(e)).toList();
   }
 
@@ -233,10 +239,7 @@ class GiteeApi {
       {TabTitleHome tab,
       Map<String, dynamic> queryParameters, //query参数，用于接收分页信息
       refresh = false}) async {
-    if (refresh) {
-      // 列表下拉刷新，需要删除缓存（拦截器中会读取这些信息）
-      _options.extra.addAll({"refresh": true, "list": true});
-    }
+    final options = _options.merge(extra: refresh ? {"refresh": true, "list": true} : <String, dynamic>{});
     var _option = "";
     switch (tab) {
       case TabTitleHome.Recommend:
@@ -253,8 +256,8 @@ class GiteeApi {
     }
     var response = await dioV3.get<List>(
       "projects/$_option/",
-      queryParameters: queryParameters,
-      options: _options,
+      queryParameters: _copyQueryParameters(queryParameters),
+      options: options,
     );
     return response.data.map((e) => RepoV3.fromJson(e)).toList();
   }
@@ -264,8 +267,8 @@ class GiteeApi {
   @deprecated
   Future<List<RepoV3>> searchReposV3({@required String keyWords, Map<String, dynamic> queryParameters}) async {
     var response = await dioV3.get<List>(
-      "projects/search/$keyWords",
-      queryParameters: queryParameters,
+      "projects/search/${_encodeSegment(keyWords)}",
+      queryParameters: _copyQueryParameters(queryParameters),
       options: _options,
     );
     return response.data.map((e) => RepoV3.fromJson(e)).toList();
@@ -276,7 +279,7 @@ class GiteeApi {
     Response response = await dioV5.get(
       _NettingPath.issues,
       queryParameters: {
-        "perPage": _perPage,
+        "per_page": _perPage,
         "page": page,
         "sort": "updated",
         "filter": "all",
@@ -288,11 +291,12 @@ class GiteeApi {
   }
 
   Future readme(String owner, String repo) async {
+    final path = _NettingPath.readme
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     Response response = await dioV5.get(
-      _NettingPath.readme,
+      path,
       queryParameters: {
-        "{owner}": owner,
-        "{repo}": repo,
         ACCESS_TOKEN: OAuth().token(),
       },
     );
@@ -300,16 +304,17 @@ class GiteeApi {
   }
 
   Future reposContents(String owner, String repo, {String path: "", String ref}) async {
+    final requestPath = _NettingPath.reposContents
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo))
+        .replaceAll("{path}", _encodeContentsPath(path));
     var data = {
-      "{owner}": owner,
-      "{repo}": repo,
-      "{path}": path,
       ACCESS_TOKEN: OAuth().token(),
     };
     if (ref != null) {
       data["ref"] = ref;
     }
-    Response response = await dioV5.get(_NettingPath.reposContents, queryParameters: data);
+    Response response = await dioV5.get(requestPath, queryParameters: data);
     return response.data;
   }
 
@@ -323,70 +328,74 @@ class GiteeApi {
   }
 
   Future star(String owner, String repo) async {
+    final path = _NettingPath.star
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     var data = {
-      "{owner}": owner,
-      "{repo}": repo,
       ACCESS_TOKEN: OAuth().token(),
     };
-    print(data);
-    Response response = await dioV5.put(_NettingPath.star, queryParameters: data);
+    Response response = await dioV5.put(path, queryParameters: data);
     return response.data;
   }
 
   Future unstar(String owner, String repo) async {
+    final path = _NettingPath.star
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     var data = {
-      "{owner}": owner,
-      "{repo}": repo,
       ACCESS_TOKEN: OAuth().token(),
     };
-    print(data);
-    Response response = await dioV5.delete(_NettingPath.star, queryParameters: data);
+    Response response = await dioV5.delete(path, queryParameters: data);
     return response.data;
   }
 
   Future watch(String owner, String repo) async {
+    final path = _NettingPath.watch
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     Map<String, dynamic> data = {
-      "{owner}": owner,
-      "{repo}": repo,
       ACCESS_TOKEN: OAuth().token(),
     };
-    print(data);
-    Response response = await dioV5.put(_NettingPath.watch, queryParameters: data);
+    Response response = await dioV5.put(path, queryParameters: data);
     return response.data;
   }
 
   Future unwatch(String owner, String repo) async {
+    final path = _NettingPath.watch
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     var data = {
-      "{owner}": owner,
-      "{repo}": repo,
       ACCESS_TOKEN: OAuth().token(),
     };
-    print(data);
-    Response response = await dioV5.delete(_NettingPath.watch, queryParameters: data);
+    Response response = await dioV5.delete(path, queryParameters: data);
     return response.data;
   }
 
   Future<dynamic> starUsers(String owner, String repo, [int page = 1]) async {
+    if (!OAuth().isAuthorized) return <dynamic>[];
+    final path = _NettingPath.starUsers
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     var data = {
-      "{owner}": owner,
-      "{repo}": repo,
       "per_page": _perPage,
       "page": page,
       ACCESS_TOKEN: OAuth().token(),
     };
-    Response response = await dioV5.get(_NettingPath.starUsers, queryParameters: data);
+    Response response = await dioV5.get(path, queryParameters: data);
     return response.data;
   }
 
   Future<dynamic> watchUsers(String owner, String repo, [int page = 1]) async {
+    if (!OAuth().isAuthorized) return <dynamic>[];
+    final path = _NettingPath.watchUsers
+        .replaceAll("{owner}", _encodeSegment(owner))
+        .replaceAll("{repo}", _encodeSegment(repo));
     var data = {
-      "{owner}": owner,
-      "{repo}": repo,
       "per_page": _perPage,
       "page": page,
       ACCESS_TOKEN: OAuth().token(),
     };
-    Response response = await dioV5.get(_NettingPath.watchUsers, queryParameters: data);
+    Response response = await dioV5.get(path, queryParameters: data);
     return response.data;
   }
 }
