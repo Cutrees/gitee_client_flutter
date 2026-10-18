@@ -34,12 +34,15 @@ class _SearchPageRouteState extends State<SearchPageRoute>
 
   @override
   void dispose() {
-    super.dispose();
+    tabController.dispose();
+    _editController.dispose();
     Global.prefs.setStringList(PREFS_SEARCH_HISTORY, historyData);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     backColor = getThemePrimaryColor(context);
 
     return Scaffold(
@@ -134,14 +137,13 @@ class _SearchPageRouteState extends State<SearchPageRoute>
   }
 
   _beginSearch() async {
-    if (_editController.text == null || _editController.text.length <= 0) {
+    final words = _editController.text.trim();
+    if (words.length <= 0) {
       showToast("搜索内容不能为空");
     } else {
-      if (searchWords != null) {
-        eventBus.fire(SearchEvent(searchWords: _editController.text));
-      }
+      _editController.text = words;
       setState(() {
-        searchWords = _editController.text;
+        searchWords = words;
       });
       //如果搜索的字段不在历史记录中，添加到历史记录
       if (!historyData.contains(searchWords)) {
@@ -150,7 +152,7 @@ class _SearchPageRouteState extends State<SearchPageRoute>
         });
       }
       //搜索完成收起软键盘
-      FocusScope.of(context).requestFocus(FocusNode());
+      FocusScope.of(context).unfocus();
     }
   }
 
@@ -348,11 +350,10 @@ class _SearchPageRouteState extends State<SearchPageRoute>
         controller: tabController,
         children: <Widget>[
           _SearchPageRepoList(
+            key: ValueKey<String>(searchWords),
             searchWords: searchWords,
           ),
-          _SearchPageRepoList(
-            searchWords: searchWords,
-          )
+          Center(child: Text('用户搜索暂未实现'))
         ],
       );
     }
@@ -360,7 +361,7 @@ class _SearchPageRouteState extends State<SearchPageRoute>
 }
 
 class _SearchPageRepoList extends StatefulWidget {
-  _SearchPageRepoList({@required this.searchWords});
+  _SearchPageRepoList({Key key, @required this.searchWords}) : super(key: key);
 
   final String searchWords;
 
@@ -371,41 +372,19 @@ class _SearchPageRepoList extends StatefulWidget {
 }
 
 class _SearchPageRepoListState extends State<_SearchPageRepoList> with AutomaticKeepAliveClientMixin {
-  var curSearchWords;
-
-  //搜索订阅事件
-  var _searchChangeSubscription;
-
-  //这个key用来在不是手动下拉，而是点击某个button或其它操作时，代码直接触发下拉刷新
-  // final GlobalKey<RefreshIndicatorState> refreshIndicatorKey =
-  //     new GlobalKey<RefreshIndicatorState>();
-
   @override
   bool get wantKeepAlive => true;
 
   @override
-  void initState() {
-    super.initState();
-    curSearchWords = widget.searchWords;
-    //订阅搜索事件
-    _searchChangeSubscription = eventBus.on<SearchEvent>().listen((event) {
-      setState(() {
-        curSearchWords = event.searchWords;
-      });
-      //refreshIndicatorKey.currentState.show(); //更新文件列表
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return MediaQuery.removePadding(
       removeTop: true,
       context: context,
       child: InfiniteListView<RepoV3>(
-        //refreshKey: refreshIndicatorKey,
         onRetrieveData: (int page, List<RepoV3> items, bool refresh) async {
           var data = await GiteeApi().searchReposV3(
-            keyWords: curSearchWords,
+            keyWords: widget.searchWords,
             queryParameters: {
               'page': page,
             },
@@ -425,11 +404,5 @@ class _SearchPageRepoListState extends State<_SearchPageRepoList> with Automatic
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _searchChangeSubscription.cancel();
-    super.dispose();
   }
 }
