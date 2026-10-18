@@ -7,7 +7,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 class WebViewRoute extends StatefulWidget {
   WebViewRoute({Key key, this.url}) : super(key: ValueKey(url));
   final String url;
-  String title;
 
   @override
   _WebViewRouteState createState() => _WebViewRouteState();
@@ -15,6 +14,7 @@ class WebViewRoute extends StatefulWidget {
 
 class _WebViewRouteState extends State<WebViewRoute> {
   final Completer<WebViewController> _controller = Completer<WebViewController>();
+  String _title;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,7 @@ class _WebViewRouteState extends State<WebViewRoute> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.title ?? "",
+          _title ?? "",
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(fontSize: 13),
@@ -53,7 +53,7 @@ class _WebViewRouteState extends State<WebViewRoute> {
             _controller.future.then((c) => c.getTitle()).then((value) {
               if (!mounted) return;
               setState(() {
-                widget.title = value;
+                _title = value;
               });
             });
           },
@@ -64,15 +64,8 @@ class _WebViewRouteState extends State<WebViewRoute> {
             //_toasterJavascriptChannel(context),
           ].toSet(),
           navigationDelegate: (NavigationRequest request) {
-            if (request.url == (widget.url ?? "")) {
-              print('allowing navigation to $request');
-              return NavigationDecision.navigate;
-            }
-            if (request.url.startsWith(widget.url ?? "")) {
-              print('blocking navigation to $request}');
-              return NavigationDecision.prevent;
-            }
-            print('allowing navigation to $request');
+            //站内子页面(如仓库的 issues/tree 等)需要正常跳转，不能在WebView内被拦截
+            print('allowing navigation to ${request.url}');
             return NavigationDecision.navigate;
           },
         );
