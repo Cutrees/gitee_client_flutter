@@ -1,30 +1,36 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility that Flutter provides. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:gitee_client_flutter/main.dart';
+import 'package:gitee_client_flutter/util/date_label.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+  group('DateLabel', () {
+    test('1分钟内显示刚刚', () {
+      final date = DateTime.now().subtract(Duration(seconds: 10));
+      expect(DateLabel(date).toString(), '刚刚');
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('1天内显示时刻', () {
+      final date = DateTime.now().subtract(Duration(minutes: 30));
+      expect(RegExp(r'^\d{2}:\d{2}$').hasMatch(DateLabel(date).toString()), isTrue);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('刚好1天前显示昨天，而不是当天的时刻', () {
+      final date = DateTime.now().subtract(Duration(days: 1, hours: 1));
+      expect(DateLabel(date).toString(), '昨天');
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('一周内显示天数', () {
+      final date = DateTime.now().subtract(Duration(days: 3));
+      expect(DateLabel(date).toString(), '3天前');
+    });
+
+    test('超过一周显示月/日', () {
+      final date = DateTime.now().subtract(Duration(days: 30));
+      expect(RegExp(r'^\d{2}/\d{2}$').hasMatch(DateLabel(date).toString()), isTrue);
+    });
+
+    test('超过一年显示完整日期', () {
+      final date = DateTime.now().subtract(Duration(days: 400));
+      expect(RegExp(r'^\d{4}/\d{2}/\d{2}$').hasMatch(DateLabel(date).toString()), isTrue);
+    });
   });
 }
