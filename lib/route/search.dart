@@ -385,6 +385,7 @@ class _SearchPageRepoListState extends State<_SearchPageRepoList> with Automatic
         onRetrieveData: (int page, List<RepoV3> items, bool refresh) async {
           var data = await GiteeApi().searchReposV3(
             keyWords: widget.searchWords,
+            refresh: refresh, //下拉刷新时清理缓存，避免取到旧结果
             queryParameters: {
               'page': page,
             },

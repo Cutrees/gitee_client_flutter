@@ -263,12 +263,13 @@ class _HomeListWidgetState extends State<_HomeListWidget> with AutomaticKeepAliv
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); //AutomaticKeepAliveClientMixin必须调用
     return InfiniteListView<RepoV3>(
       onRetrieveData: (int page, List<RepoV3> items, bool refresh) async {
         var data = await GiteeApi().getRepoListV3(tab: widget.tab, refresh: refresh, queryParameters: {'page': page});
         // 把请求到的新数据添加到items中
-        items.addAll(data);
-        return data.length > 0 && data.length % 20 == 0;
+        items.addAll(data ?? <RepoV3>[]);
+        return data != null && data.length > 0 && data.length % 20 == 0;
       },
       emptyBuilder: (VoidCallback refresh, BuildContext context) => listNoDataView(refresh, context),
       // 项目信息列表项

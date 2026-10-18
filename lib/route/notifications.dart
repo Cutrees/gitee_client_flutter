@@ -83,10 +83,10 @@ class _NotificationListWidgetState extends State<NotificationListWidget> with Au
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); //AutomaticKeepAliveClientMixin必须调用
     return InfiniteListView<Object>(
       onRetrieveData: (int page, List<Object> items, bool refresh) async {
-        var data;
-        print("type ==================> ${widget.type}");
+        List<Object> data;
         switch (widget.type) {
           case 0:
             data = await GiteeApi().messagesAll(false, queryParameters: {
@@ -108,8 +108,8 @@ class _NotificationListWidgetState extends State<NotificationListWidget> with Au
             break;
         }
         // 把请求到的新数据添加到items中
-        items.addAll(data);
-        return data.length > 0 && data.length % 20 == 0;
+        items.addAll(data ?? <Object>[]);
+        return data != null && data.length > 0 && data.length % 20 == 0;
       },
       emptyBuilder: (VoidCallback refresh, BuildContext context) => listNoDataView(refresh, context),
       itemBuilder: (List list, int index, BuildContext ctx) {

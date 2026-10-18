@@ -265,11 +265,13 @@ class GiteeApi {
   // 搜索仓库
   // https://gitee.com/api/v3/projects/search/jfinal?page=3
   @deprecated
-  Future<List<RepoV3>> searchReposV3({@required String keyWords, Map<String, dynamic> queryParameters}) async {
+  Future<List<RepoV3>> searchReposV3(
+      {@required String keyWords, Map<String, dynamic> queryParameters, refresh = false}) async {
+    final options = _options.merge(extra: refresh ? {"refresh": true, "list": true} : <String, dynamic>{});
     var response = await dioV3.get<List>(
       "projects/search/${_encodeSegment(keyWords)}",
       queryParameters: _copyQueryParameters(queryParameters),
-      options: _options,
+      options: options,
     );
     return response.data.map((e) => RepoV3.fromJson(e)).toList();
   }

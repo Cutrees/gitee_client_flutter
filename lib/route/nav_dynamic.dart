@@ -34,6 +34,7 @@ class _DynamicRouteState extends State<DynamicRoute> {
       return InfiniteListView<DynamicNews>(
         onRetrieveData: (int page, List<DynamicNews> items, bool refresh) async {
           var data = await GiteeApi().receivedEvents(queryParameters: {"page": page, "per_page": '20'});
+          data ??= <DynamicNews>[];
           items.addAll(data);
           return data.length > 0 && data.length % 20 == 0;
         },
