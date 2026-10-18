@@ -20,7 +20,8 @@ class UserModel extends ProfileChangeNotifier {
   //用户信息发生变化，更新用户信息并通知依赖它的子孙Widgets更新
   set user(User user) {
     if (user?.id != _profile.user?.id) {
-      _profile.lastLogin = _profile.user?.name?.toString();
+      //记住本次操作的账号(登录名)，下次登录时自动填充；退出登录时保留原账号
+      _profile.lastLogin = user?.login ?? _profile.user?.login;
       _profile.user = user;
       notifyListeners();
     }
@@ -48,7 +49,7 @@ class LocaleModel extends ProfileChangeNotifier {
   Locale getLocale() {
     if (_profile.locale == null) return null;
     var t = _profile.locale.split("_");
-    return Locale(t[0], t[1]);
+    return t.length > 1 ? Locale(t[0], t[1]) : Locale(t[0]);
   }
 
   // 获取当前Locale的字符串表示

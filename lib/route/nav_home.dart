@@ -227,6 +227,8 @@ class _HomeDrawer extends StatelessWidget {
                                 //该赋值语句会触发MaterialApp rebuild
                                 userModel.user = null;
                                 Navigator.pop(context);
+                                //清除本地令牌、公共请求头及网络缓存
+                                OAuth().logout();
                               },
                             ),
                           ],

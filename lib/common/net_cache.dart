@@ -62,11 +62,15 @@ class NetCache extends Interceptor {
   _saveCache(Response object) {
     RequestOptions options = object.request;
     if (options.extra["noCache"] != true && options.method.toLowerCase() == "get") {
-      // 如果缓存数量超过最大数量限制，则先移除最早的一条记录
-      if (cache.length == Global.profile.cache.maxCount) {
-        cache.remove(cache[cache.keys.first]);
-      }
       String key = options.extra["cacheKey"] ?? options.uri.toString();
+      // 新key才需要检查容量，更新已有key不会增加缓存数量
+      if (!cache.containsKey(key)) {
+        // 如果缓存数量超过最大数量限制，则先移除最早的一条记录
+        int maxCount = Global.profile.cache?.maxCount ?? 0;
+        while (maxCount > 0 && cache.length >= maxCount) {
+          cache.remove(cache.keys.first);
+        }
+      }
       cache[key] = _CacheObject(object);
     }
   }
