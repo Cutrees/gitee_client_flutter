@@ -113,7 +113,7 @@ class _LoginRouteState extends State<LoginRoute> {
           return;
         }
 
-        await GiteeApi().login(_nameController.text, _pwdController.text);
+        await GiteeApi().login(_nameController.text.trim(), _pwdController.text);
         user = await GiteeApi().userInfo();
         // 因为登录页返回后，首页会build，所以我们传false，更新user后不触发更新
         Provider.of<UserModel>(context, listen: false).user = user;
@@ -121,6 +121,10 @@ class _LoginRouteState extends State<LoginRoute> {
         print(e?.toString());
         //登录失败则提示
         showToast(e.toString());
+        //获取用户信息失败等情况下token已写入本地，需要清除，避免残留半登录状态
+        if (OAuth().isAuthorized) {
+          await OAuth().resetToken();
+        }
       } finally {
         // 隐藏Loading框
         if (mounted) {

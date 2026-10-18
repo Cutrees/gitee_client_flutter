@@ -53,6 +53,8 @@ class _BadgeWidgetState extends State<BadgeWidget> {
     if (widget.centerWidget == null && widget.centerIconData == null) {
       throw ('centerWidget,centerIconData至少设置了一个');
     }
+    //首次构建时也要根据future决定是否显示红点，否则首次不显示
+    widget.showNumber = (widget.future != null);
   }
   @override
   void didUpdateWidget(BadgeWidget oldWidget) {
