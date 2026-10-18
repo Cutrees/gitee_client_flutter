@@ -147,8 +147,10 @@ class _RepoDynamicNewsItemWidgetState extends State<_DynamicNewsItemWidget> {
         );
         break;
       case DynamicType.PushEvent:
+        final commits = widget.news?.payload?.commits;
+        final message = commits != null && commits.isNotEmpty ? commits[0]?.message ?? "" : "";
         return Text(
-          "${widget.news?.payload?.commits[0]?.message}  ",
+          "$message  ",
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey,

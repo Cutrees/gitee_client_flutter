@@ -34,10 +34,14 @@ class _WebViewRouteState extends State<WebViewRoute> {
           initialUrl: widget?.url ?? "",
           javascriptMode: JavascriptMode.unrestricted,
           onWebViewCreated: (WebViewController webViewController) {
-            _controller.complete(webViewController);
+            if (!_controller.isCompleted) {
+              _controller.complete(webViewController);
+            }
           },
           onWebResourceError: (WebResourceError error) {
-            _controller.completeError(error);
+            if (!_controller.isCompleted) {
+              _controller.completeError(error);
+            }
             print('Page onWebResourceError: ${error?.description}');
           },
           onPageStarted: (String url) {
@@ -46,8 +50,11 @@ class _WebViewRouteState extends State<WebViewRoute> {
           onPageFinished: (String url) {
             print('Page finished loading: $url');
             //更新标题
-            setState(() {
-              _controller.future.then((c) => c.getTitle().then((value) => widget.title = value));
+            _controller.future.then((c) => c.getTitle()).then((value) {
+              if (!mounted) return;
+              setState(() {
+                widget.title = value;
+              });
             });
           },
           gestureNavigationEnabled: true,
@@ -57,6 +64,10 @@ class _WebViewRouteState extends State<WebViewRoute> {
             //_toasterJavascriptChannel(context),
           ].toSet(),
           navigationDelegate: (NavigationRequest request) {
+            if (request.url == (widget.url ?? "")) {
+              print('allowing navigation to $request');
+              return NavigationDecision.navigate;
+            }
             if (request.url.startsWith(widget.url ?? "")) {
               print('blocking navigation to $request}');
               return NavigationDecision.prevent;

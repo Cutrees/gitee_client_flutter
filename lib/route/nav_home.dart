@@ -18,6 +18,12 @@ class _HomeRouteState extends State<HomeRoute> with SingleTickerProviderStateMix
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(

@@ -23,7 +23,14 @@ class _PersonDetailState extends State<MyRoute>
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final UserModel userModel = Provider.of<UserModel>(context);
     // 用户未登录, 显示登录按钮
     if (!userModel.isLogin) {
@@ -134,6 +141,8 @@ class _PersonDetailState extends State<MyRoute>
   }
 
   _headPersonInfo(User user) {
+    final String createdAt = user?.created_at;
+    final String createdAtText = createdAt == null ? "" : (createdAt.length > 10 ? createdAt.substring(0, 10) : createdAt);
     return Padding(
       padding: EdgeInsets.only(left: 16, right: 16, bottom: 20, top: 30),
       child: Column(
@@ -181,7 +190,7 @@ class _PersonDetailState extends State<MyRoute>
             ),
           ),
           Text(
-            "创建于：" + user?.created_at?.substring(0, 10),
+            "创建于：" + createdAtText,
             style: TextStyle(
               fontSize: 13,
               color: Colors.white70,

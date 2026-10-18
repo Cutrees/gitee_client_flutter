@@ -16,7 +16,7 @@ class _LoginRouteState extends State<LoginRoute> {
   @override
   void initState() {
     // 自动填充上次登录的用户名，填充后将焦点定位到密码输入框
-    _nameController.text = Global.profile.lastLogin;
+    _nameController.text = Global.profile.lastLogin ?? "";
     if (_nameController.text.isNotEmpty) {
       _nameAutoFocus = false;
     }
@@ -25,6 +25,8 @@ class _LoginRouteState extends State<LoginRoute> {
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _pwdController.dispose();
     super.dispose();
   }
 
@@ -121,9 +123,11 @@ class _LoginRouteState extends State<LoginRoute> {
         showToast(e.toString());
       } finally {
         // 隐藏Loading框
-        Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
-      if (user != null) {
+      if (user != null && mounted) {
         Navigator.of(context).pop();
       }
     }

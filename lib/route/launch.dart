@@ -10,6 +10,7 @@ class _LaunchState extends State<LaunchWidget> {
   void initState() {
     OAuth().prepare().then((oauth) {
       Future.delayed(Duration(milliseconds: 100)).then((_) {
+        if (!mounted) return;
         // if ((oauth as OAuth).isAuthorized) {
         //   Navigator.of(context).pushReplacementNamed("/router/home");
         // } else {

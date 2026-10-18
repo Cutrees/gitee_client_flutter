@@ -25,6 +25,12 @@ class _NotificationsRouteState extends State<NotificationsRoute> with SingleTick
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     //var themeColor=Theme.of(context).primaryColor;
     var themeColor = Colors.white;
