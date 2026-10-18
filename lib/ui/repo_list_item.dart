@@ -134,18 +134,20 @@ class _RepoListWidgetState extends State<RepoListWidget> with AutomaticKeepAlive
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); //AutomaticKeepAliveClientMixin必须调用
     return MediaQuery.removePadding(
       removeTop: true,
       context: context,
       child: InfiniteListView<Repo>(
         pageSize: 20,
         onRetrieveData: (int page, List<Repo> items, bool refresh) async {
-          var data;
+          List<Repo> data;
           if (widget.tab == 0) {
             data = await GiteeApi().getRepoList(page);
           } else if (widget.tab == 1) {
             data = await GiteeApi().getRepoStarList(page: page);
           }
+          data ??= <Repo>[];
           items.addAll(data); // 把请求到的新数据添加到items中
           return data.length > 0 && data.length % 20 == 0;
         },

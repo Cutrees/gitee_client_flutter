@@ -9,12 +9,13 @@ class DateLabel {
   String toString() {
     final now = DateTime.now();
     Duration duration = now.difference(date);
-    if (duration.inDays > 365) {
+    if (duration.inDays >= 365) {
       return formatDate(date, [yyyy, '/', mm, '/', dd]);
     } else if (duration.inDays > 7) {
       return formatDate(date, [mm, '/', dd]);
-    } else if (duration.inDays > 1) {
-      return '${duration.inDays}' + '天前';
+    } else if (duration.inDays >= 1) {
+      // 刚好1天前不应显示为当天的时刻
+      return duration.inDays == 1 ? "昨天" : '${duration.inDays}' + '天前';
     } else if (duration.inMinutes > 1) {
       return formatDate(date, [hh, ':', nn]);
     } else {
