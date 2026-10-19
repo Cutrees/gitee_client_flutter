@@ -21,7 +21,7 @@ class _SettingsRouteState extends State<SettingsRoute> {
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
-      setState(() => _version = 'v${info.version} (${info.buildNumber})');
+      setState(() => _version = 'v${info.version}');
     }
   }
 
