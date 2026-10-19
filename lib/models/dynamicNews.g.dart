@@ -7,7 +7,7 @@ part of 'dynamicNews.dart';
 // **************************************************************************
 
 DynamicNews _$DynamicNewsFromJson(Map<String, dynamic> json) => DynamicNews()
-  ..id = _idFromJson(json['id'])
+  ..id = DynamicNews._idFromJson(json['id'])
   ..type = json['type'] as String?
   ..actor = json['actor'] == null
       ? null
