@@ -187,7 +187,7 @@ class GiteeApi {
         'per_page': perPage,
         'page': page,
         'type': 'all',
-        'sort': 'full_name',
+        'sort': 'updated',
       }),
       options: _options(noCache: true),
     );
