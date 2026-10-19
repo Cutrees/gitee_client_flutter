@@ -6,17 +6,17 @@ const BASE_URL_V3 = '${BASE_URL}api/v3/';
 const CLIENT_ID = String.fromEnvironment(
   'GITEE_CLIENT_ID',
   defaultValue:
-      '47c4bab7e3de5fee929d8d50f65721513476e7467aa7c30661810f53615fae28',
+      '4bc4cdf54620e5b492d688aefedf9aed39f1df292c3072a01b9faae3dedc95c4',
 );
 const CLIENT_SECRET = String.fromEnvironment(
   'GITEE_CLIENT_SECRET',
   defaultValue:
-      '0cff85e8decb0b93cd856952c85f41a1e8636040b7f4ffdea8788dbbe632421b',
+      'c901cf26cbff2871838aec2389317dcc5923ae722a2ab447727aa7c987f9e270',
 );
 
 const OAUTH_AUTHORIZE_URL = 'https://gitee.com/oauth/authorize';
 const OAUTH_TOKEN_URL = 'https://gitee.com/oauth/token';
-const OAUTH_REDIRECT_URI = 'giteeclient://callback';
+const OAUTH_REDIRECT_URI = 'astra://callback';
 const OAUTH_SCOPE = 'user_info projects notes gists';
 
 const fontIconFontCN = 'iconFontCN';
