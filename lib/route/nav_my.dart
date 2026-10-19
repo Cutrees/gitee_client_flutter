@@ -53,9 +53,42 @@ class _MyRouteState extends State<MyRoute>
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Text(
-                      user.name ?? user.login ?? '未知用户',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name ?? user.login ?? '未知用户',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            _FollowStat(
+                              label: '关注',
+                              count: user.following,
+                              onTap: () => navToPage2(
+                                context: context,
+                                page: UserFollowRoute(
+                                  login: user.login ?? '',
+                                  initialIndex: 1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            _FollowStat(
+                              label: '粉丝',
+                              count: user.followers,
+                              onTap: () => navToPage2(
+                                context: context,
+                                page: UserFollowRoute(
+                                  login: user.login ?? '',
+                                  initialIndex: 0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -86,6 +119,36 @@ class _MyRouteState extends State<MyRoute>
             RepoListWidget(0, key: ValueKey('${user.id}-repos')),
             DynamicRoute(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowStat extends StatelessWidget {
+  const _FollowStat({
+    required this.label,
+    required this.count,
+    required this.onTap,
+  });
+
+  final String label;
+  final num? count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Text(
+          '$label ${count ?? 0}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

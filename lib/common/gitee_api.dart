@@ -125,6 +125,26 @@ class GiteeApi {
     return User.fromJson(response.data!);
   }
 
+  /// 用户的粉丝列表。
+  Future<List<User>> userFollowers(String login, {int page = 1}) async {
+    final response = await dioV5.get(
+      'api/v5/users/${_encodeSegment(login)}/followers',
+      queryParameters: _query({'per_page': perPage, 'page': page}),
+      options: _options(noCache: true),
+    );
+    return _list(response.data, User.fromJson);
+  }
+
+  /// 用户关注的用户列表。
+  Future<List<User>> userFollowing(String login, {int page = 1}) async {
+    final response = await dioV5.get(
+      'api/v5/users/${_encodeSegment(login)}/following',
+      queryParameters: _query({'per_page': perPage, 'page': page}),
+      options: _options(noCache: true),
+    );
+    return _list(response.data, User.fromJson);
+  }
+
   Future<List<DynamicNews>> receivedEvents({
     Map<String, dynamic>? queryParameters,
     bool refresh = false,
