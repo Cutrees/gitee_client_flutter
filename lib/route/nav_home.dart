@@ -1,4 +1,5 @@
 import '../index.dart';
+import '../util/exploration_paging.dart';
 
 class HomeRoute extends StatefulWidget {
   const HomeRoute({super.key});
@@ -166,21 +167,21 @@ class _HomeListWidget extends StatefulWidget {
 
 class _HomeListWidgetState extends State<_HomeListWidget>
     with AutomaticKeepAliveClientMixin {
+  late final _paging = ExplorationPaging(
+    (page, refresh) => GiteeApi().getRepoListV3(
+      tab: widget.tab,
+      refresh: refresh,
+      queryParameters: {'page': page},
+    ),
+  );
+
   @override
   bool get wantKeepAlive => true;
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return InfiniteListView<RepoV3>(
-      onRetrieveData: (page, items, refresh) async {
-        final data = await GiteeApi().getRepoListV3(
-          tab: widget.tab,
-          refresh: refresh,
-          queryParameters: {'page': page},
-        );
-        items.addAll(data);
-        return data.length == 20;
-      },
+      onRetrieveData: _paging.load,
       emptyBuilder: listNoDataView,
       itemBuilder: (list, index, context) => RepoListItemWidgetV3(list[index]),
     );

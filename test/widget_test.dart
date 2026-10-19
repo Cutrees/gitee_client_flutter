@@ -11,8 +11,52 @@ import 'package:gitee_client_flutter/models/repoV3.dart';
 import 'package:gitee_client_flutter/models/user.dart';
 import 'package:gitee_client_flutter/ui/list_view.dart';
 import 'package:gitee_client_flutter/util/date_label.dart';
+import 'package:gitee_client_flutter/util/exploration_paging.dart';
 
 void main() {
+  group('探索换批', () {
+    test('刷新取下一批，后续分页连续，末尾回到第一页', () async {
+      final calls = <(int, bool)>[];
+      final paging = ExplorationPaging((page, refresh) async {
+        calls.add((page, refresh));
+        return page <= 4 ? [RepoV3()..id = page] : [];
+      });
+      final initial = <RepoV3>[];
+      await paging.load(1, initial, false);
+      await paging.load(2, initial, false);
+      final refreshed = <RepoV3>[];
+      await paging.load(1, refreshed, true);
+      expect(refreshed.single.id, 3);
+      await paging.load(2, refreshed, false);
+      expect(refreshed.map((repo) => repo.id), [3, 4]);
+      final wrapped = <RepoV3>[];
+      await paging.load(1, wrapped, true);
+      expect(wrapped.single.id, 1);
+      expect(calls, [
+        (1, false),
+        (2, false),
+        (3, true),
+        (4, false),
+        (5, true),
+        (1, true),
+      ]);
+    });
+
+    test('刷新失败不推进批次', () async {
+      var fail = true;
+      final paging = ExplorationPaging((page, refresh) async {
+        if (refresh && fail) throw StateError('网络异常');
+        return [RepoV3()..id = page];
+      });
+      await paging.load(1, [], false);
+      await expectLater(paging.load(1, [], true), throwsStateError);
+      fail = false;
+      final items = <RepoV3>[];
+      await paging.load(1, items, true);
+      expect(items.single.id, 2);
+    });
+  });
+
   group('DateLabel', () {
     test('1分钟内显示刚刚', () {
       final date = DateTime.now().subtract(Duration(seconds: 10));
