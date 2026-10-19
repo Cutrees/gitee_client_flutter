@@ -8,7 +8,8 @@ part 'repo.g.dart';
 class Repo {
   Repo();
 
-  num? id;
+  @JsonKey(fromJson: _idFromJson)
+  String? id;
   String? full_name;
   String? human_name;
   String? url;
@@ -68,6 +69,8 @@ class Repo {
   num? testers_number;
   List<User>? assignees;
   List<User>? testers;
+
+  static String? _idFromJson(Object? value) => value?.toString();
 
   factory Repo.fromJson(Map<String, dynamic> json) => _$RepoFromJson(json);
   Map<String, dynamic> toJson() => _$RepoToJson(this);

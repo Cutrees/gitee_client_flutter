@@ -36,56 +36,83 @@ class _DynamicNewsItemWidget extends StatelessWidget {
   _DynamicNewsItemWidget(this.news) : super(key: ValueKey(news.id));
   final DynamicNews news;
 
-  String get _subtitle {
+  String get _action {
+    switch (news.type) {
+      case 'PushEvent':
+        return '推送了代码';
+      case 'StarEvent':
+        return 'Star 了';
+      case 'WatchEvent':
+        return '关注了';
+      case 'ForkEvent':
+        return 'Fork 了';
+      case 'CreateEvent':
+        return '创建了';
+      case 'IssueEvent':
+        return '提出了 Issue';
+      case 'PullRequestEvent':
+        return '发起了 PR';
+      case 'IssueCommentEvent':
+      case 'CommitCommentEvent':
+        return '评论了';
+      case 'MemberEvent':
+        return '加入了';
+      case 'FollowEvent':
+        return '关注了';
+      default:
+        return (news.type ?? '').replaceAll('Event', '');
+    }
+  }
+
+  String get _detail {
     final payload = news.payload;
-    switch (DynamicType.INSTANCE.getPrefix(news.type)) {
-      case DynamicType.MemberEvent:
-        return news.repo?.human_name ?? news.repo?.full_name ?? '';
-      case DynamicType.IssueEvent:
-      case DynamicType.PullRequestEvent:
-        final number =
-            payload?.number ??
-            payload?.issue?.number ??
-            payload?.pull_request?.number?.toString();
-        return [
-          if (number != null) '#$number',
-          payload?.title ??
-              payload?.issue?.title ??
-              payload?.pull_request?.title ??
-              '',
-        ].join(' ').trim();
-      case DynamicType.PullRequestCommentEvent:
-        return payload?.pull_request?.title ??
-            payload?.issue?.title ??
-            payload?.comment?.body ??
-            '';
-      case DynamicType.PushEvent:
+    final repoName = news.repo?.human_name ?? news.repo?.full_name ?? '';
+    switch (news.type) {
+      case 'PushEvent':
         final commits = payload?.commits;
-        return commits != null && commits.isNotEmpty
+        final msg = commits != null && commits.isNotEmpty
             ? commits.first.message ?? ''
             : '';
+        return [repoName, msg].where((e) => e.isNotEmpty).join(' · ');
+      case 'IssueEvent':
+      case 'PullRequestEvent':
+        final number = payload?.number ??
+            payload?.issue?.number ??
+            payload?.pull_request?.number?.toString();
+        final title = payload?.title ??
+            payload?.issue?.title ??
+            payload?.pull_request?.title ??
+            '';
+        return [repoName, if (number != null) '#$number', title]
+            .where((e) => e.isNotEmpty)
+            .join(' · ');
       default:
-        return payload?.comment?.body ?? payload?.body ?? '';
+        final body = payload?.comment?.body ?? payload?.body ?? '';
+        return [repoName, body].where((e) => e.isNotEmpty).join(' · ');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final payload = news.payload;
-    final url =
-        payload?.html_url ??
+    final url = payload?.html_url ??
         payload?.issue?.html_url ??
         payload?.pull_request?.html_url ??
         payload?.comment?.html_url ??
-        news.repo?.html_url;
+        news.repo?.html_url ??
+        news.actor?.html_url;
+    final actor = news.actor?.name ?? news.actor?.login ?? '未知用户';
+    final detail = _detail;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
           ListTile(
             leading: getAvatarRect(news.actor?.avatar_url, width: 35),
-            title: Text(news.actor?.name ?? news.actor?.login ?? '未知用户'),
-            subtitle: Text(_subtitle.isEmpty ? '暂无内容' : _subtitle),
+            title: Text('$actor $_action'),
+            subtitle: detail.isEmpty
+                ? null
+                : Text(detail, maxLines: 2, overflow: TextOverflow.ellipsis),
             trailing: Text(
               (news.type ?? '').replaceAll('Event', ''),
               style: const TextStyle(fontSize: 10),

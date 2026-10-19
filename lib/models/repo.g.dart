@@ -7,7 +7,7 @@ part of 'repo.dart';
 // **************************************************************************
 
 Repo _$RepoFromJson(Map<String, dynamic> json) => Repo()
-  ..id = json['id'] as num?
+  ..id = Repo._idFromJson(json['id'])
   ..full_name = json['full_name'] as String?
   ..human_name = json['human_name'] as String?
   ..url = json['url'] as String?
