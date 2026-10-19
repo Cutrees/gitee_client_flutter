@@ -16,6 +16,7 @@ class _LaunchState extends State<LaunchWidget> {
   }
 
   Future<void> _prepare() async {
+    final hadUser = Global.profile.user != null;
     try {
       await OAuth().prepare();
     } catch (e) {
@@ -24,6 +25,10 @@ class _LaunchState extends State<LaunchWidget> {
     }
     if (!mounted) return;
     setState(() => _ready = true);
+    // 登录态因 token 过期被清除时，明确提示用户，而不是静默显示「未登录」。
+    if (hadUser && Global.profile.user == null) {
+      showToast('登录已过期，请重新登录');
+    }
     // 用户资料刷新放到后台异步执行，避免网络请求阻塞启动画面。
     if (OAuth().isAuthorized) _refreshUser();
     autoCheckUpdate();
