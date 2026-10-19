@@ -6,7 +6,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Global.init();
-  } catch (_) {
+  } catch (e) {
+    debugPrint('Global.init 失败: $e');
     // 初始化失败也不阻塞启动，确保进入应用，避免卡在原生启动画面。
   }
   runApp(const MyApp());

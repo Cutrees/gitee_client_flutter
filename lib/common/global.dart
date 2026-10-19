@@ -21,7 +21,14 @@ class Global {
 
   static Future<void> init() async {
     WidgetsFlutterBinding.ensureInitialized();
-    prefs = await SharedPreferences.getInstance();
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (e) {
+      // SharedPreferences 初始化失败时降级为内存存储，避免 prefs 未初始化导致启动崩溃。
+      debugPrint('SharedPreferences 初始化失败，降级为内存存储: $e');
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    }
     final savedProfile = prefs.getString(PREFS_PROFILE);
     if (savedProfile != null) {
       try {

@@ -18,14 +18,21 @@ class _LaunchState extends State<LaunchWidget> {
   Future<void> _prepare() async {
     try {
       await OAuth().prepare();
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(page_main);
-      // 用户资料刷新放到后台异步执行，避免网络请求阻塞启动画面。
-      if (OAuth().isAuthorized) _refreshUser();
-      autoCheckUpdate();
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
+    } catch (e) {
+      // OAuth 初始化失败不阻塞启动，直接进入主页。
+      debugPrint('OAuth 初始化失败: $e');
     }
+    if (!mounted) return;
+    try {
+      Navigator.of(context).pushReplacementNamed(page_main);
+    } catch (e) {
+      debugPrint('导航到主页失败: $e');
+      if (mounted) setState(() => _failed = true);
+      return;
+    }
+    // 用户资料刷新放到后台异步执行，避免网络请求阻塞启动画面。
+    if (OAuth().isAuthorized) _refreshUser();
+    autoCheckUpdate();
   }
 
   Future<void> _refreshUser() async {
