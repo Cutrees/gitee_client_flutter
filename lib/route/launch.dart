@@ -1,4 +1,5 @@
 import '../index.dart';
+import '../util/check_update.dart';
 
 class LaunchWidget extends StatefulWidget {
   const LaunchWidget({super.key});
@@ -33,6 +34,7 @@ class _LaunchState extends State<LaunchWidget> {
       }
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(page_main);
+      autoCheckUpdate();
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     }

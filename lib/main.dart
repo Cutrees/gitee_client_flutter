@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
           final seedColor = themeModel.seedColor;
           return MaterialApp(
             debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: seedColor,

@@ -32,20 +32,35 @@ Future<String> getLatestTag() async {
 }
 
 /// 检查更新：对比当前版本与最新 tag，有新版本则弹窗提示下载。
-Future<void> checkUpdate(BuildContext context) async {
+Future<void> checkUpdate(BuildContext context, {bool silent = false}) async {
   try {
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final String currentVersion = packageInfo.version;
     final String latestTag = await getLatestTag();
     if (!context.mounted) return;
     if (latestTag == 'v$currentVersion' || latestTag == currentVersion) {
-      showToast('已是最新版');
+      if (!silent) showToast('已是最新版');
     } else {
       _showUpdateDialog(context, latestTag);
     }
   } catch (_) {
-    showToast('无法获取更新信息，请稍后重试');
+    if (!silent) showToast('无法获取更新信息，请稍后重试');
   }
+}
+
+/// 应用启动后自动检查更新（延迟 4 秒，6 小时节流，避免频繁请求触发限流）。
+Future<void> autoCheckUpdate() async {
+  await Future.delayed(const Duration(seconds: 4));
+  final prefs = await SharedPreferences.getInstance();
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final last = prefs.getInt('last_check_update_time');
+  if (last != null && now - last < const Duration(hours: 6).inMilliseconds) {
+    return;
+  }
+  await prefs.setInt('last_check_update_time', now);
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+  await checkUpdate(context, silent: true);
 }
 
 void _showUpdateDialog(BuildContext context, String latestTag) {

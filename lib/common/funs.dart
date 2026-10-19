@@ -7,6 +7,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gitee_client_flutter/common/const.dart';
 import 'package:gitee_client_flutter/ui/web_view.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 bool checkUrl(String? url) =>
     url != null && (url.startsWith('https://') || url.startsWith('http://'));
 
