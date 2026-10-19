@@ -26,7 +26,7 @@ class UserModel extends ProfileChangeNotifier {
 class ThemeModel extends ProfileChangeNotifier {
   Color get seedColor {
     final value = _profile.theme;
-    return value == null ? const Color(0xFFC71D23) : Color(value.toInt());
+    return value == null ? const Color(0xFF009688) : Color(value.toInt());
   }
 
   Color get theme => seedColor;

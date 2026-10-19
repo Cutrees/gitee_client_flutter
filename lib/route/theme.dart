@@ -7,7 +7,7 @@ class ThemeChangeRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeModel = context.watch<ThemeModel>();
     final scheme = Theme.of(context).colorScheme;
-    const brandColor = Color(0xFFC71D23);
+    const brandColor = Color(0xFF009688);
     final colors = [brandColor, ...Global.themes];
 
     return Scaffold(

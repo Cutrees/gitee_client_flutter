@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
         builder: (context, themeModel, localeModel, child) {
           final seedColor = themeModel.seedColor;
           return MaterialApp(
+            debugShowCheckedModeBanner: false,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: seedColor,

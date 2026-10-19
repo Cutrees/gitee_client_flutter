@@ -82,7 +82,15 @@ class _MainRouteState extends State<MainRoute> {
                   .clamp(0, _pageList.length - 1);
               if (index != _selectedIndex && index != _dragTarget) {
                 _dragTarget = index;
-                _pageController.jumpToPage(index);
+                if (reduceMotion) {
+                  _pageController.jumpToPage(index);
+                } else {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
               }
             },
             onHorizontalDragEnd: (_) => _dragTarget = null,
