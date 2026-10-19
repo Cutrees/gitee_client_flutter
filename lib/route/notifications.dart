@@ -68,7 +68,7 @@ class _NotificationListWidgetState extends State<NotificationListWidget>
                 queryParameters: {'page': page, 'per_page': 20},
               )
             : await GiteeApi().notificationsAll(
-                true,
+                false,
                 queryParameters: {'page': page, 'per_page': 20},
               );
         items.addAll(data);
@@ -244,18 +244,32 @@ class _NotificationItemWidget extends StatelessWidget {
     final dateText = date == null
         ? ''
         : date.toLocal().toString().split('.').first;
+    final content = (html.parseFragment(notification.content ?? '').text ?? '')
+        .trim();
     return ListTile(
       title: Text(
-        notification.content ?? '暂无内容',
+        notification.subject?.title?.isNotEmpty == true
+            ? notification.subject!.title!
+            : content.isEmpty
+            ? '暂无内容'
+            : content,
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         [
+          if (notification.subject?.title?.isNotEmpty == true) content,
           dateText,
           notification.repository?.full_name ?? '',
         ].where((value) => value.isNotEmpty).join(' · '),
       ),
+      trailing: notification.unread == true
+          ? Icon(
+              Icons.circle,
+              size: 10,
+              color: Theme.of(context).colorScheme.primary,
+            )
+          : null,
       onTap: url == null || url.isEmpty
           ? null
           : () => navToWeb(context: context, url: url),

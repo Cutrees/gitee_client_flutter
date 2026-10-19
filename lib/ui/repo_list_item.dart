@@ -112,8 +112,30 @@ class RepoListItemWidget extends StatelessWidget {
           width: 35,
         ),
         title: Text(repo.full_name ?? repo.name ?? '未命名仓库'),
-        subtitle: Text(
-          repo.description ?? GmLocalizations.of(context).noDescription,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(repo.description ?? GmLocalizations.of(context).noDescription),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                IconText(
+                  '${repo.watchers_count ?? 0}',
+                  icon: const Icon(MyIcons.watch, size: 15),
+                ),
+                IconText(
+                  '${repo.stargazers_count ?? 0}',
+                  icon: const Icon(MyIcons.star, size: 15),
+                ),
+                IconText(
+                  '${repo.forks_count ?? 0}',
+                  icon: const Icon(MyIcons.branch, size: 15),
+                ),
+              ],
+            ),
+          ],
         ),
         trailing: Text(repo.language ?? ''),
         onTap: url == null || url.isEmpty

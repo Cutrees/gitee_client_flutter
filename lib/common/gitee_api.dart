@@ -37,9 +37,16 @@ class GiteeApi {
   List<T> _list<T>(dynamic data, T Function(Map<String, dynamic>) decode) {
     final dynamic items = data is Map ? data['list'] : data;
     if (items is! List) throw const FormatException('Expected a list response');
-    return items
-        .map((item) => decode(Map<String, dynamic>.from(item as Map)))
-        .toList();
+    final result = <T>[];
+    for (final item in items) {
+      try {
+        result.add(decode(Map<String, dynamic>.from(item as Map)));
+      } catch (e) {
+        // 跳过无法解析的条目，避免单条脏数据阻断整页列表。
+        debugPrint('列表解码跳过一条: $e');
+      }
+    }
+    return result;
   }
 
   Future<void> login(String account, String password) async {
@@ -86,12 +93,14 @@ class GiteeApi {
 
   Future<List<DynamicNews>> receivedEvents({
     Map<String, dynamic>? queryParameters,
+    bool refresh = false,
   }) async {
     final login = Global.profile.user?.login;
     if (!OAuth().isAuthorized || login == null || login.isEmpty) return [];
     final response = await dioV5.get(
       'api/v5/users/${_encodeSegment(login)}/received_events',
       queryParameters: _query({'per_page': perPage, ...?queryParameters}),
+      options: _options(refresh: refresh),
     );
     return _list(response.data, DynamicNews.fromJson);
   }
@@ -156,10 +165,9 @@ class GiteeApi {
   }
 
   Future<List<Repo>> getRepoList(int page) async {
-    final login = Global.profile.user?.login;
-    if (!OAuth().isAuthorized || login == null || login.isEmpty) return [];
+    if (!OAuth().isAuthorized) return [];
     final response = await dioV5.get(
-      'api/v5/users/${_encodeSegment(login)}/repos',
+      'api/v5/user/repos',
       queryParameters: _query({
         'per_page': perPage,
         'page': page,

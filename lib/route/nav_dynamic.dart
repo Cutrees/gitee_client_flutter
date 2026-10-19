@@ -19,6 +19,7 @@ class DynamicRoute extends StatelessWidget {
               onRetrieveData: (page, items, refresh) async {
                 final data = await GiteeApi().receivedEvents(
                   queryParameters: {'page': page, 'per_page': 20},
+                  refresh: refresh,
                 );
                 items.addAll(data);
                 return data.length == 20;
@@ -42,13 +43,22 @@ class _DynamicNewsItemWidget extends StatelessWidget {
         return news.repo?.human_name ?? news.repo?.full_name ?? '';
       case DynamicType.IssueEvent:
       case DynamicType.PullRequestEvent:
-        final number = payload?.number;
+        final number =
+            payload?.number ??
+            payload?.issue?.number ??
+            payload?.pull_request?.number?.toString();
         return [
           if (number != null) '#$number',
-          payload?.title ?? '',
+          payload?.title ??
+              payload?.issue?.title ??
+              payload?.pull_request?.title ??
+              '',
         ].join(' ').trim();
       case DynamicType.PullRequestCommentEvent:
-        return payload?.pull_request?.title ?? payload?.comment?.body ?? '';
+        return payload?.pull_request?.title ??
+            payload?.issue?.title ??
+            payload?.comment?.body ??
+            '';
       case DynamicType.PushEvent:
         final commits = payload?.commits;
         return commits != null && commits.isNotEmpty
@@ -61,7 +71,13 @@ class _DynamicNewsItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = news.payload?.html_url ?? news.repo?.html_url;
+    final payload = news.payload;
+    final url =
+        payload?.html_url ??
+        payload?.issue?.html_url ??
+        payload?.pull_request?.html_url ??
+        payload?.comment?.html_url ??
+        news.repo?.html_url;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
