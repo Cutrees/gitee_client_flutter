@@ -62,26 +62,6 @@ class GiteeApi {
     return null;
   }
 
-  Future<void> login(String account, String password) async {
-    if (CLIENT_ID.isEmpty || CLIENT_SECRET.isEmpty) {
-      throw StateError('请通过构建参数配置 Gitee OAuth 应用');
-    }
-    final response = await dioV5.post<Map<String, dynamic>>(
-      'oauth/token',
-      data: FormData.fromMap({
-        'grant_type': 'password',
-        'username': account,
-        'password': password,
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
-        'scope': 'user_info projects notes gists',
-      }),
-      options: _options(noCache: true),
-    );
-    await OAuth().storeToken(response.data!);
-    Global.netCache.cache.clear();
-  }
-
   /// OAuth2 授权码模式：用授权回调里的 code 换取 access_token。
   Future<void> loginWithCode(String code) async {
     final response = await dioV5.post<Map<String, dynamic>>(

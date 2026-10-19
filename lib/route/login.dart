@@ -32,7 +32,7 @@ class LoginRoute extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               SizedBox(
-                height: 56,
+                height: 64,
                 child: FilledButton.icon(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -43,10 +43,10 @@ class LoginRoute extends StatelessWidget {
                   label: const Text('使用 Gitee 账号登录'),
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     textStyle: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
