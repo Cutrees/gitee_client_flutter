@@ -44,7 +44,29 @@ class _SettingsRouteState extends State<SettingsRoute> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => navToPage(context, page_theme),
           ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
           const _SectionTitle('关于'),
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('开发者'),
+            subtitle: const Text(authorName),
+            onTap: () =>
+                navToWeb(context: context, url: appDeveloperProfileUrl),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('关于应用'),
+            onTap: () => _showAbout(context),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.email_outlined),
+            title: const Text('反馈'),
+            subtitle: const Text(authorMail),
+            onTap: () => launchUrl(Uri.parse('mailto:$authorMail')),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
           ListTile(
             leading: const Icon(Icons.android),
             title: const Text('当前版本'),
@@ -54,30 +76,13 @@ class _SettingsRouteState extends State<SettingsRoute> {
               child: const Text('检查更新'),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('开发者'),
-            subtitle: const Text(authorName),
-            onTap: () =>
-                navToWeb(context: context, url: appDeveloperProfileUrl),
-          ),
-          ListTile(
-            leading: const Icon(Icons.email_outlined),
-            title: const Text('反馈'),
-            subtitle: const Text(authorMail),
-            onTap: () => launchUrl(Uri.parse('mailto:$authorMail')),
-          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
           ListTile(
             leading: const Icon(Icons.get_app),
             title: const Text('最新版下载'),
             subtitle: const Text(appReleaseUrl),
             onTap: () =>
                 navToWeb(context: context, url: '$appReleaseUrl/releases'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('关于应用'),
-            onTap: () => _showAbout(context),
           ),
         ],
       ),
