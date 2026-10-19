@@ -1,8 +1,29 @@
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../index.dart';
 import '../util/check_update.dart';
 
-class SettingsRoute extends StatelessWidget {
+class SettingsRoute extends StatefulWidget {
   const SettingsRoute({super.key});
+  @override
+  State<SettingsRoute> createState() => _SettingsRouteState();
+}
+
+class _SettingsRouteState extends State<SettingsRoute> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() => _version = 'v${info.version} (${info.buildNumber})');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +46,13 @@ class SettingsRoute extends StatelessWidget {
           ),
           const _SectionTitle('关于'),
           ListTile(
-            leading: const Icon(Icons.system_update_outlined),
-            title: const Text('检查更新'),
-            onTap: () => checkUpdate(context),
+            leading: const Icon(Icons.android),
+            title: const Text('当前版本'),
+            subtitle: Text(_version.isEmpty ? '获取中...' : _version),
+            trailing: TextButton(
+              onPressed: () => checkUpdate(context),
+              child: const Text('检查更新'),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
@@ -44,7 +69,11 @@ class SettingsRoute extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('码云 Gitee'),
-        content: const Text('一个简洁的 Gitee 安卓客户端。'),
+        content: const Text(
+          '一款简洁的 Gitee 安卓客户端，基于 gitee_client_flutter 改造。'
+          '通过 Gitee OpenAPI v5 访问仓库、动态、通知等数据，'
+          '支持 OAuth2 授权码登录，登录后可访问私有仓库。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
