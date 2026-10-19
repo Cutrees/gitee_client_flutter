@@ -1,6 +1,11 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
+
 import '../index.dart';
+
+/// 刷新 access_token 的结果。
+enum _RefreshResult { success, invalidGrant, failed }
 
 class OAuth {
   static final OAuth _shared = OAuth._internal();
@@ -28,7 +33,10 @@ class OAuth {
     }
     if (isAuthorized) {
       _resetCreatedAt(_oauth?.created_at?.toInt() ?? 0);
-      if (isExpired && !await refreshAccessToken()) await resetToken();
+      if (isExpired) {
+        final result = await refreshAccessToken();
+        if (result == _RefreshResult.invalidGrant) await resetToken();
+      }
     } else if (Global.profile.user != null) {
       await resetToken();
     }
@@ -95,14 +103,24 @@ class OAuth {
         .isAfter(DateTime.now());
   }
 
-  Future<bool> refreshAccessToken() async {
+  Future<_RefreshResult> refreshAccessToken() async {
     final refreshToken = _oauth?.refresh_token;
-    if (refreshToken == null || refreshToken.isEmpty) return false;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return _RefreshResult.invalidGrant;
+    }
     try {
       await storeToken(await GiteeApi().refreshToken(refreshToken));
-      return true;
+      return _RefreshResult.success;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      // 400/401 表示 refresh_token 已失效或被撤销，需要重新授权；
+      // 其它（5xx、网络超时等）属于临时问题，保留登录状态，下次启动再重试。
+      if (status == 400 || status == 401) {
+        return _RefreshResult.invalidGrant;
+      }
+      return _RefreshResult.failed;
     } catch (_) {
-      return false;
+      return _RefreshResult.failed;
     }
   }
 
