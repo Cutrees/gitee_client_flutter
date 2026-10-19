@@ -8,7 +8,7 @@ class LaunchWidget extends StatefulWidget {
 }
 
 class _LaunchState extends State<LaunchWidget> {
-  bool _failed = false;
+  bool _ready = false;
   @override
   void initState() {
     super.initState();
@@ -23,13 +23,7 @@ class _LaunchState extends State<LaunchWidget> {
       debugPrint('OAuth 初始化失败: $e');
     }
     if (!mounted) return;
-    try {
-      Navigator.of(context).pushReplacementNamed(page_main);
-    } catch (e) {
-      debugPrint('导航到主页失败: $e');
-      if (mounted) setState(() => _failed = true);
-      return;
-    }
+    setState(() => _ready = true);
     // 用户资料刷新放到后台异步执行，避免网络请求阻塞启动画面。
     if (OAuth().isAuthorized) _refreshUser();
     autoCheckUpdate();
@@ -51,20 +45,17 @@ class _LaunchState extends State<LaunchWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: Center(
-      child: _failed
-          ? TextButton(
-              onPressed: () {
-                setState(() => _failed = false);
-                _prepare();
-              },
-              child: const Text('初始化失败，点击重试'),
-            )
-          : const Text(
-              '码云 Gitee',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
-            ),
-    ),
-  );
+  Widget build(BuildContext context) {
+    if (!_ready) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            '码云 Gitee',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
+          ),
+        ),
+      );
+    }
+    return const MainRoute();
+  }
 }
