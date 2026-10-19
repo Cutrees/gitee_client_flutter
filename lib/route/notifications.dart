@@ -1,27 +1,21 @@
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html;
+
 import '../index.dart';
 
-/// 私信,通知,@我
-// 列出授权用户的所有通知
-// https://gitee.com/api/v5/notifications/threads
-// ?access_token=533d2c9e8efa969583515b90af7a0664&type=all&page=1&per_page=20&unread=true
 class NotificationsRoute extends StatefulWidget {
-  NotificationsRoute({Key key}) : super(key: key);
-
+  const NotificationsRoute({super.key});
   @override
-  _NotificationsRouteState createState() {
-    return _NotificationsRouteState();
-  }
+  State<NotificationsRoute> createState() => _NotificationsRouteState();
 }
 
-class _NotificationsRouteState extends State<NotificationsRoute> with SingleTickerProviderStateMixin {
-  ///TabBar和TabBarView正是通过同一个controller来实现菜单切换和滑动状态同步的
-  TabController _tabController;
-  List<String> _tabs = <String>["私信", "通知"]; //"@我"
-
+class _NotificationsRouteState extends State<NotificationsRoute>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -31,300 +25,240 @@ class _NotificationsRouteState extends State<NotificationsRoute> with SingleTick
   }
 
   @override
-  Widget build(BuildContext context) {
-    //var themeColor=Theme.of(context).primaryColor;
-    var themeColor = Colors.white;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("消息"),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('消息'),
+      bottom: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(text: '私信'),
+          Tab(text: '通知'),
+        ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            color: themeColor,
-            child: TabBar(
-              controller: _tabController,
-              tabs: _tabs.map((e) => Tab(text: e)).toList(),
-              isScrollable: false,
-              //根据背景色亮度来确定Title颜色
-              labelColor: themeColor.computeLuminance() < 0.5 ? Colors.white : Colors.black,
-            ),
+    ),
+    body: TabBarView(
+      controller: _tabController,
+      children: const [
+        NotificationListWidget(type: 0),
+        NotificationListWidget(type: 1),
+      ],
+    ),
+  );
+}
+
+class NotificationListWidget extends StatefulWidget {
+  const NotificationListWidget({super.key, this.type = 0});
+  final int type;
+  @override
+  State<NotificationListWidget> createState() => _NotificationListWidgetState();
+}
+
+class _NotificationListWidgetState extends State<NotificationListWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return InfiniteListView<Object>(
+      onRetrieveData: (page, items, refresh) async {
+        final List<Object> data = widget.type == 0
+            ? await GiteeApi().messagesAll(
+                false,
+                queryParameters: {'page': page, 'per_page': 20},
+              )
+            : await GiteeApi().notificationsAll(
+                true,
+                queryParameters: {'page': page, 'per_page': 20},
+              );
+        items.addAll(data);
+        return data.length == 20;
+      },
+      emptyBuilder: listNoDataView,
+      itemBuilder: (list, index, context) {
+        final item = list[index];
+        if (item is NotifyMessages) return _MessageItemWidget(item);
+        if (item is Notifications) return _NotificationItemWidget(item);
+        return const SizedBox.shrink();
+      },
+      separatorBuilder: (list, index, context) => const Divider(height: 1),
+    );
+  }
+}
+
+class _MessageItemWidget extends StatelessWidget {
+  _MessageItemWidget(this.message) : super(key: ValueKey(message.id));
+  final NotifyMessages message;
+
+  Future<void> _openLink(BuildContext context, String? url) async {
+    final uri = Uri.tryParse(url ?? '');
+    if (uri == null ||
+        !['https', 'http'].contains(uri.scheme) ||
+        uri.host.isEmpty)
+      return;
+    final external = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: const Text('选择打开链接方式'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(GmLocalizations.of(context).cancel),
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: _tabs.map((e) {
-                return NotificationListWidget(type: (_tabs.indexOf(e)));
-              }).toList(),
-            ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('浏览器打开'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('应用内打开'),
           ),
         ],
       ),
     );
-  }
-}
-
-///通知列表
-class NotificationListWidget extends StatefulWidget {
-  NotificationListWidget({Key key, this.type}) : super(key: key); //ValueKey("type${type.toString()}"
-  final int type;
-
-  @override
-  _NotificationListWidgetState createState() {
-    return _NotificationListWidgetState();
-  }
-}
-
-class _NotificationListWidgetState extends State<NotificationListWidget> with AutomaticKeepAliveClientMixin {
-  //导航栏切换时保持原有状态
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); //AutomaticKeepAliveClientMixin必须调用
-    return InfiniteListView<Object>(
-      onRetrieveData: (int page, List<Object> items, bool refresh) async {
-        List<Object> data;
-        switch (widget.type) {
-          case 0:
-            data = await GiteeApi().messagesAll(false, queryParameters: {
-              "page": page,
-              "per_page": '20',
-            });
-            break;
-          case 1:
-            data = await GiteeApi().notificationsAll(true, queryParameters: {
-              "page": page,
-              "per_page": '20',
-            });
-            break;
-          default:
-            data = await GiteeApi().notificationsAll(true, queryParameters: {
-              "page": page,
-              "per_page": '20',
-            });
-            break;
+    if (!context.mounted || external == null) return;
+    if (external) {
+      try {
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+            context.mounted) {
+          showToast('无法打开链接');
         }
-        // 把请求到的新数据添加到items中
-        items.addAll(data ?? <Object>[]);
-        return data != null && data.length > 0 && data.length % 20 == 0;
-      },
-      emptyBuilder: (VoidCallback refresh, BuildContext context) => listNoDataView(refresh, context),
-      itemBuilder: (List list, int index, BuildContext ctx) {
-        switch (widget.type) {
-          case 0:
-            return _MessageItemWidget(list[index]);
-          case 1:
-            return _NotificationItemWidget(list[index]);
-          default:
-            break;
-        }
-        return _NotificationItemWidget(list[index]);
-      },
-      separatorBuilder: (List list, int index, BuildContext ctx) => Container(color: Colors.grey[100], height: 5.0),
-    );
+      } catch (_) {
+        if (context.mounted) showToast('无法打开链接');
+      }
+    } else {
+      await navToWeb(context: context, url: uri.toString());
+    }
   }
-}
-
-// 私信 ItemView
-class _MessageItemWidget extends StatefulWidget {
-  _MessageItemWidget(this.message) : super(key: ValueKey(message.id));
-  final NotifyMessages message;
 
   @override
-  _MessageItemWidgetState createState() => _MessageItemWidgetState();
-}
-
-class _MessageItemWidgetState extends State<_MessageItemWidget> {
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        //todo 2020年9月21日 https://gitee.com/notifications/messages/1 被重定向到 http://gitee.com/login
-        //navToWeb(context: context, url:widget.message?.html_url?? "");
-        navToWeb(context: context, url: widget.message?.html_url ?? "");
-      },
-      child: Padding(
-        padding: EdgeInsets.all(15.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "${widget.message?.sender?.name ?? ""}",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorNotifyTitle),
-            ),
-            SizedBox(height: 10.0),
-
-            // 识别 content 中的链接 , 支持复制: SelectableLinkify
-            // Linkify(
-            //   onOpen: (link) async {
-            //     if (await canLaunch(link.url)) {
-            //       await launch(link.url);
-            //     } else {
-            //       print('Could not launch $link');
-            //     }
-            //   },
-            //   text: "${widget.message?.content ?? ""}",
-            //   options: LinkifyOptions(humanize: false),
-            //   maxLines: 8,
-            //   overflow: TextOverflow.ellipsis,
-            //   style: TextStyle(fontSize: 14, color: Colors.grey),
-            //   linkStyle: TextStyle(color: colorNotifyTitle),
-            // ),
-
-            Html(
-              data: """${widget.message?.content ?? ""}""",
-              shrinkWrap: true,
-              style: {
-                "html": Style(
-                  alignment: Alignment.topLeft,
-                  backgroundColor: Colors.transparent,
-                  color: Colors.grey,
-                ),
-                "a": Style(
-                  backgroundColor: Colors.transparent,
-                ),
-
-                // "table": Style(
-                //   backgroundColor: Color.fromARGB(0x50, 0xee, 0xee, 0xee),
-                // ),
-                // "tr": Style(
-                //   border: Border(bottom: BorderSide(color: Colors.grey)),
-                // ),
-                // "th": Style(
-                //   padding: EdgeInsets.all(6),
-                //   backgroundColor: Colors.grey,
-                // ),
-                // "td": Style(
-                //   padding: EdgeInsets.all(6),
-                // ),
-                // "var": Style(fontFamily: 'serif'),
-              },
-              customRender: {
-                "flutter": (RenderContext context, Widget child, attributes, _) {
-                  return FlutterLogo(
-                    style: (attributes['horizontal'] != null) ? FlutterLogoStyle.horizontal : FlutterLogoStyle.markOnly,
-                    textColor: context.style.color,
-                    size: context.style.fontSize.size * 5,
-                  );
-                },
-              },
-              onLinkTap: (url) async {
-                if (await canLaunch(url)) {
-                  print("Opening onLinkTap $url...");
-                  //await launch(url);
-                  //navToPage2(context: context, page: WebViewRoute(url: url));
-
-                  //支持浏览器和本地WebView打开url
-                  var gm = GmLocalizations.of(context);
-                  showDialog(
-                    context: context,
-                    builder: (ctx) {
-                      return AlertDialog(
-                        content: Text("选择打开Url链接方式"),
-                        actions: <Widget>[
-                          FlatButton(
-                            child: Text(gm.cancel, style: TextStyle(fontSize: 13)),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          FlatButton(
-                            child: Text('浏览器打开', style: TextStyle(fontSize: 13)),
-                            onPressed: () async {
-                              //该赋值语句会触发MaterialApp rebuild
-                              Navigator.pop(context);
-                              await launch(url);
-                            },
-                          ),
-                          FlatButton(
-                            child: Text('应用内打开', style: TextStyle(fontSize: 13)),
-                            onPressed: () {
-                              //该赋值语句会触发MaterialApp rebuild
-                              Navigator.pop(context);
-                              navToWeb(context: context, url: url);
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                } else {
-                  print('Could not launch $url');
-                }
-              },
-              onImageTap: (src) {
-                print(src);
-              },
-              onImageError: (exception, stackTrace) {
-                print(exception);
-              },
-            ),
-          ],
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(15),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          message.sender?.name ?? message.sender?.login ?? '未知用户',
+          style: Theme.of(context).textTheme.titleMedium,
         ),
+        const SizedBox(height: 10),
+        if (message.content?.isNotEmpty ?? false)
+          _MessageContentWidget(
+            content: message.content!,
+            onLinkTap: (url) => _openLink(context, url),
+          )
+        else
+          const Text('暂无内容'),
+        if (message.html_url?.isNotEmpty ?? false)
+          TextButton(
+            onPressed: () => _openLink(context, message.html_url),
+            child: const Text('查看私信'),
+          ),
+      ],
+    ),
+  );
+}
+
+class _MessageContentWidget extends StatelessWidget {
+  const _MessageContentWidget({required this.content, required this.onLinkTap});
+
+  final String content;
+  final ValueChanged<String> onLinkTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final linkColor = Theme.of(context).colorScheme.primary;
+
+    InlineSpan render(dom.Node node, {bool insideLink = false}) {
+      if (node is dom.Text) return TextSpan(text: node.data);
+      if (node is! dom.Element) return const TextSpan();
+      final tag = node.localName;
+      if (['script', 'style', 'iframe', 'object'].contains(tag)) {
+        return const TextSpan();
+      }
+      if (tag == 'br') return const TextSpan(text: '\n');
+      if (tag == 'img') return TextSpan(text: node.attributes['alt'] ?? '');
+      final href = node.attributes['href'];
+      final isLink = tag == 'a' && href != null && !insideLink;
+      final children = node.nodes
+          .map((child) => render(child, insideLink: insideLink || isLink))
+          .toList();
+      final span = TextSpan(
+        style: switch (tag) {
+          'b' || 'strong' => const TextStyle(fontWeight: FontWeight.bold),
+          'i' || 'em' => const TextStyle(fontStyle: FontStyle.italic),
+          'u' => const TextStyle(decoration: TextDecoration.underline),
+          's' ||
+          'del' => const TextStyle(decoration: TextDecoration.lineThrough),
+          'code' || 'pre' => const TextStyle(fontFamily: 'monospace'),
+          _ => null,
+        },
+        children: [
+          if (tag == 'li') const TextSpan(text: '• '),
+          ...children,
+          if ([
+            'p',
+            'div',
+            'li',
+            'pre',
+            'blockquote',
+            'h1',
+            'h2',
+            'h3',
+          ].contains(tag))
+            const TextSpan(text: '\n'),
+        ],
+      );
+      if (!isLink) return span;
+      return WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: InkWell(
+          onTap: () => onLinkTap(href),
+          child: Text.rich(
+            span,
+            style: TextStyle(
+              color: linkColor,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Text.rich(
+      TextSpan(
+        children: html.parseFragment(content).nodes.map(render).toList(),
       ),
     );
   }
 }
 
-// 通知 ItemView
-class _NotificationItemWidget extends StatefulWidget {
-  _NotificationItemWidget(this.notification) : super(key: ValueKey(notification.id));
+class _NotificationItemWidget extends StatelessWidget {
+  _NotificationItemWidget(this.notification)
+    : super(key: ValueKey(notification.id));
   final Notifications notification;
-
-  @override
-  _NotificationItemWidgetState createState() {
-    return _NotificationItemWidgetState();
-  }
-}
-
-class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-        onTap: () {
-          navToWeb(context: context, url: widget.notification?.html_url ?? "");
-        },
-        child: Padding(
-          padding: EdgeInsets.all(15.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "${widget.notification?.content ?? ""}",
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, color: colorNotifyTitle),
-              ),
-              SizedBox(height: 10.0),
-              Row(
-                children: [
-                  Text(
-                    "${widget.notification?.updated_at ?? ""}",
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  SizedBox(width: 15.0),
-                  Text(
-                    "${widget.notification?.repository?.full_name ?? ""}",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ));
+    final url = notification.html_url;
+    final date = DateTime.tryParse(notification.updated_at ?? '');
+    final dateText = date == null
+        ? ''
+        : date.toLocal().toString().split('.').first;
+    return ListTile(
+      title: Text(
+        notification.content ?? '暂无内容',
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        [
+          dateText,
+          notification.repository?.full_name ?? '',
+        ].where((value) => value.isNotEmpty).join(' · '),
+      ),
+      onTap: url == null || url.isEmpty
+          ? null
+          : () => navToWeb(context: context, url: url),
+    );
   }
 }
-
-// @我 ItemView

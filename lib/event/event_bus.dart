@@ -13,5 +13,5 @@ class BranchSwitchEvent {
 //搜索事件
 class SearchEvent {
   String searchWords;
-  SearchEvent({this.searchWords});
+  SearchEvent({this.searchWords = ''});
 }

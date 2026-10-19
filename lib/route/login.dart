@@ -1,26 +1,25 @@
-import '../index.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 
-///登录
+import '../index.dart' hide Connectivity, ConnectivityResult;
+
 class LoginRoute extends StatefulWidget {
+  const LoginRoute({super.key});
   @override
-  _LoginRouteState createState() => _LoginRouteState();
+  State<LoginRoute> createState() => _LoginRouteState();
 }
 
 class _LoginRouteState extends State<LoginRoute> {
-  TextEditingController _nameController = new TextEditingController();
-  TextEditingController _pwdController = new TextEditingController();
-  bool pwdShow = false;
-  GlobalKey _formKey = new GlobalKey<FormState>();
-  bool _nameAutoFocus = true;
+  final _nameController = TextEditingController();
+  final _pwdController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _pwdShow = false;
+  bool _loading = false;
 
   @override
   void initState() {
-    // 自动填充上次登录的用户名，填充后将焦点定位到密码输入框
-    _nameController.text = Global.profile.lastLogin ?? "";
-    if (_nameController.text.isNotEmpty) {
-      _nameAutoFocus = false;
-    }
     super.initState();
+    _nameController.text = Global.profile.lastLogin ?? '';
   }
 
   @override
@@ -32,66 +31,60 @@ class _LoginRouteState extends State<LoginRoute> {
 
   @override
   Widget build(BuildContext context) {
-    var gm = GmLocalizations.of(context);
+    final gm = GmLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(gm.login),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(15.0),
+      appBar: AppBar(title: Text(gm.login)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(15),
         child: Form(
           key: _formKey,
-          autovalidate: true,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             children: [
               TextFormField(
-                autofocus: _nameAutoFocus,
+                enabled: !_loading,
+                autofocus: _nameController.text.isEmpty,
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: gm.userName,
-                  hintText: gm.userName,
-                  prefixIcon: Icon(Icons.person),
+                  prefixIcon: const Icon(Icons.person),
                 ),
-                //校验用户名(不能为空)
-                validator: (v) {
-                  return v.trim().isNotEmpty ? null : gm.userNameRequired;
-                },
+                validator: (value) => (value?.trim().isNotEmpty ?? false)
+                    ? null
+                    : gm.userNameRequired,
               ),
               TextFormField(
+                enabled: !_loading,
+                autofocus: _nameController.text.isNotEmpty,
                 controller: _pwdController,
-                autofocus: !_nameAutoFocus,
+                obscureText: !_pwdShow,
                 decoration: InputDecoration(
                   labelText: gm.password,
-                  hintText: gm.password,
-                  prefixIcon: Icon(Icons.lock),
+                  prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(pwdShow ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () {
-                      setState(() {
-                        pwdShow = !pwdShow;
-                      });
-                    },
+                    icon: Icon(
+                      _pwdShow ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () => setState(() => _pwdShow = !_pwdShow),
                   ),
                 ),
-                //模糊文字
-                obscureText: !pwdShow,
-                //校验密码(不能为空)
-                validator: (v) {
-                  return v.trim().isNotEmpty ? null : gm.passwordRequired;
-                },
+                validator: (value) =>
+                    (value?.isNotEmpty ?? false) ? null : gm.passwordRequired,
+                onFieldSubmitted: (_) => _onLogin(),
               ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 25,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints.expand(height: 50),
-                  child: RaisedButton(
-                    color: Theme.of(context).primaryColor,
-                    onPressed: _onLogin,
-                    textColor: Colors.white,
-                    child: Text(gm.login),
-                  ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _onLogin,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(),
+                        )
+                      : Text(gm.login),
                 ),
               ),
             ],
@@ -101,39 +94,31 @@ class _LoginRouteState extends State<LoginRoute> {
     );
   }
 
-  void _onLogin() async {
-    // 先验证各个表单字段是否合法
-    if ((_formKey.currentState as FormState).validate()) {
-      showLoading(context);
-      User user;
-      try {
-        var connectivityResult = await (Connectivity().checkConnectivity());
-        if (connectivityResult == ConnectivityResult.none) {
-          showToast(networkNone);
-          return;
-        }
-
-        await GiteeApi().login(_nameController.text.trim(), _pwdController.text);
-        user = await GiteeApi().userInfo();
-        // 因为登录页返回后，首页会build，所以我们传false，更新user后不触发更新
-        Provider.of<UserModel>(context, listen: false).user = user;
-      } catch (e) {
-        print(e?.toString());
-        //登录失败则提示
-        showToast(e.toString());
-        //获取用户信息失败等情况下token已写入本地，需要清除，避免残留半登录状态
-        if (OAuth().isAuthorized) {
-          await OAuth().resetToken();
-        }
-      } finally {
-        // 隐藏Loading框
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
+  Future<void> _onLogin() async {
+    if (_loading || !(_formKey.currentState?.validate() ?? false)) return;
+    final account = _nameController.text.trim();
+    final password = _pwdController.text;
+    final model = context.read<UserModel>();
+    setState(() => _loading = true);
+    try {
+      final connections = await Connectivity().checkConnectivity();
+      if (!mounted) return;
+      if (connections.contains(ConnectivityResult.none)) {
+        showToast(networkNone);
+        return;
       }
-      if (user != null && mounted) {
-        Navigator.of(context).pop();
-      }
+      await GiteeApi().login(account, password);
+      final user = await GiteeApi().userInfo();
+      model.user = user;
+      if (mounted) Navigator.of(context).pop();
+    } on DioException {
+      if (OAuth().isAuthorized) await OAuth().resetToken();
+      if (mounted) showToast('登录失败，请检查账号、密码或网络后重试');
+    } catch (_) {
+      if (OAuth().isAuthorized) await OAuth().resetToken();
+      if (mounted) showToast('登录失败，请稍后重试');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 }

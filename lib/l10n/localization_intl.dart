@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import 'messages_all.dart'; //1
 
 class GmLocalizations {
   static Future<GmLocalizations> load(Locale locale) {
-    final String name = locale.countryCode.isEmpty ? locale.languageCode : locale.toString();
+    final String name = (locale.countryCode?.isEmpty ?? true)
+        ? locale.languageCode
+        : locale.toString();
     final String localeName = Intl.canonicalizedLocale(name);
     //2
     return initializeMessages(localeName).then((b) {
@@ -14,7 +17,8 @@ class GmLocalizations {
   }
 
   static GmLocalizations of(BuildContext context) {
-    return Localizations.of<GmLocalizations>(context, GmLocalizations);
+    return Localizations.of<GmLocalizations>(context, GmLocalizations) ??
+        GmLocalizations();
   }
 
   String get title {
@@ -47,22 +51,30 @@ class GmLocalizations {
 
   String get theme => Intl.message('Theme', name: 'theme');
 
-  String get noDescription => Intl.message('No description yet !', name: 'noDescription');
+  String get noDescription =>
+      Intl.message('No description yet !', name: 'noDescription');
 
   String get userName => Intl.message('User Name', name: 'userName');
 
-  String get userNameRequired => Intl.message("User name required!", name: 'userNameRequired');
+  String get userNameRequired =>
+      Intl.message("User name required!", name: 'userNameRequired');
 
   String get password => Intl.message('Password', name: 'password');
 
-  String get passwordRequired => Intl.message('Password required!', name: 'passwordRequired');
+  String get passwordRequired =>
+      Intl.message('Password required!', name: 'passwordRequired');
 
-  String get userNameOrPasswordWrong =>
-      Intl.message('User name or password is not correct!', name: 'userNameOrPasswordWrong');
+  String get userNameOrPasswordWrong => Intl.message(
+    'User name or password is not correct!',
+    name: 'userNameOrPasswordWrong',
+  );
 
   String get logout => Intl.message('logout', name: 'logout');
 
-  String get logoutTip => Intl.message('Are you sure you want to quit your current account?', name: 'logoutTip');
+  String get logoutTip => Intl.message(
+    'Are you sure you want to quit your current account?',
+    name: 'logoutTip',
+  );
 
   String get yes => Intl.message('yes', name: 'yes');
 

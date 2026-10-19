@@ -5,22 +5,18 @@ class ProfileChangeNotifier extends ChangeNotifier {
 
   @override
   void notifyListeners() {
-    Global.saveProfile(); //保存Profile变更
-    super.notifyListeners(); //通知依赖的Widget变更
+    Global.saveProfile();
+    super.notifyListeners();
   }
 }
 
-///用户
 class UserModel extends ProfileChangeNotifier {
-  User get user => _profile.user;
+  User? get user => _profile.user;
 
-  //App是否登录(如果有用户信息,则已登录)
   bool get isLogin => user != null;
 
-  //用户信息发生变化，更新用户信息并通知依赖它的子孙Widgets更新
-  set user(User user) {
+  set user(User? user) {
     if (user?.id != _profile.user?.id) {
-      //记住本次操作的账号(登录名)，下次登录时自动填充；退出登录时保留原账号
       _profile.lastLogin = user?.login ?? _profile.user?.login;
       _profile.user = user;
       notifyListeners();
@@ -28,35 +24,33 @@ class UserModel extends ProfileChangeNotifier {
   }
 }
 
-///主题
 class ThemeModel extends ProfileChangeNotifier {
-  // 获取当前主题, 如果为设置主题, 则默认使用第一个主题
-  ColorSwatch get theme =>
-      Global.themes.firstWhere((element) => element.value == _profile.theme, orElse: () => Global.themes[0]);
+  Color get seedColor {
+    final value = _profile.theme;
+    return value == null ? const Color(0xFFC71D23) : Color(value.toInt());
+  }
 
-  // 主题改变后, 通知其依赖项, 新主题会立即生效
-  set theme(ColorSwatch color) {
-    if (color != theme) {
-      _profile.theme = color[500].value;
+  Color get theme => seedColor;
+
+  set theme(Color color) {
+    if (color.toARGB32() != _profile.theme) {
+      _profile.theme = color.toARGB32();
       notifyListeners();
     }
   }
 }
 
-///语言
 class LocaleModel extends ProfileChangeNotifier {
-  // 获取当前用户的APP语言配置Locale类，如果为null，则语言跟随系统语言
-  Locale getLocale() {
-    if (_profile.locale == null) return null;
-    var t = _profile.locale.split("_");
-    return t.length > 1 ? Locale(t[0], t[1]) : Locale(t[0]);
+  Locale? getLocale() {
+    final locale = _profile.locale;
+    if (locale == null) return null;
+    final parts = locale.split('_');
+    return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
   }
 
-  // 获取当前Locale的字符串表示
-  String get locale => _profile.locale;
+  String? get locale => _profile.locale;
 
-  // 用户改变APP语言后，通知依赖项更新，新语言会立即生效
-  set locale(String locale) {
+  set locale(String? locale) {
     if (locale != _profile.locale) {
       _profile.locale = locale;
       notifyListeners();

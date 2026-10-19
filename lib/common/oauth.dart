@@ -3,112 +3,110 @@ import 'dart:io';
 import '../index.dart';
 
 class OAuth {
-  static final OAuth _shared = new OAuth._internal();
-
+  static final OAuth _shared = OAuth._internal();
   OAuth._internal();
+  factory OAuth() => _shared;
 
-  factory OAuth() {
-    return _shared;
-  }
+  Oauth? _oauth;
+  DateTime? _createdAt;
 
-  Oauth _oauth;
-  DateTime _createdAt;
+  String? token() => _oauth?.access_token ?? Global.profile.oauth?.access_token;
 
-  String token() => _oauth?.access_token ?? Global.profile.oauth?.access_token;
-
-  ///程序启动时调用，检查本地用户信息
-  Future prepare() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String accessToken = prefs.getString("access_token");
-    if (accessToken == null || accessToken.isEmpty) return this;
-    _oauth = new Oauth();
-    _oauth.expires_in = prefs.getInt("expires_in") ?? 0;
-    _oauth.access_token = accessToken;
-    _oauth.refresh_token = prefs.getString("refresh_token");
-    _oauth.scope = prefs.getString("scope");
-    _oauth.created_at = prefs.getInt("created_at") ?? 0;
-    Global.profile.oauth = _oauth;
-
-    _resetCreatedAt((_oauth?.created_at as int) ?? 0);
-    if (isExpired) await refreshAccessToken();
-    print("prepare isExpired : $isExpired");
+  Future<OAuth> prepare() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('access_token');
+    if (accessToken != null && accessToken.isNotEmpty) {
+      _oauth = Oauth()
+        ..access_token = accessToken
+        ..expires_in = prefs.getInt('expires_in') ?? 0
+        ..refresh_token = prefs.getString('refresh_token')
+        ..scope = prefs.getString('scope')
+        ..created_at = prefs.getInt('created_at') ?? 0;
+      Global.profile.oauth = _oauth;
+    } else {
+      _oauth = Global.profile.oauth;
+    }
+    if (isAuthorized) {
+      _resetCreatedAt(_oauth?.created_at?.toInt() ?? 0);
+      if (isExpired && !await refreshAccessToken()) await resetToken();
+    } else if (Global.profile.user != null) {
+      await resetToken();
+    }
     return this;
   }
 
   Future<void> storeToken(Map<String, dynamic> data) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    _oauth = Oauth();
-    _oauth.access_token = data["access_token"];
-    _oauth.refresh_token = data["refresh_token"];
-    _oauth.expires_in = data["expires_in"];
-    _oauth.scope = data["scope"];
-    int time = data["created_at"] ?? 0;
-    _oauth.created_at = time;
+    final oauth = Oauth.fromJson(data);
+    final accessToken = oauth.access_token;
+    if (accessToken == null || accessToken.isEmpty) {
+      throw const FormatException('Missing access token');
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final time =
+        oauth.created_at?.toInt() ??
+        DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    oauth.created_at = time;
+    await prefs.setInt('expires_in', oauth.expires_in?.toInt() ?? 0);
+    await prefs.setString('access_token', accessToken);
+    await prefs.setString('refresh_token', oauth.refresh_token ?? '');
+    await prefs.setString('scope', oauth.scope ?? '');
+    await prefs.setInt('created_at', time);
+    _oauth = oauth;
     _resetCreatedAt(time);
-    Global.profile.oauth = _oauth; //更新profile中的token信息
-    //同步更新公共请求头，使后续请求都带上用户身份信息
-    GiteeApi.dioV3.options.headers[HttpHeaders.authorizationHeader] = _oauth.access_token;
-
-    prefs.setInt("expires_in", _oauth.expires_in);
-    prefs.setString("access_token", _oauth.access_token);
-    prefs.setString("refresh_token", _oauth.refresh_token);
-    prefs.setString("scope", _oauth.scope);
-    prefs.setInt("created_at", time);
-    await prefs.reload();
+    Global.profile.oauth = oauth;
+    for (final dio in [GiteeApi.dioV3, GiteeApi.dioV5]) {
+      dio.options.headers.remove(HttpHeaders.authorizationHeader);
+    }
+    Global.netCache.cache.clear();
+    await Global.saveProfile();
   }
 
   Future<void> resetToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt("expires_in", 0);
-    await prefs.setString("access_token", "");
-    await prefs.setString("refresh_token", "");
-    await prefs.setString("scope", "");
-    await prefs.setInt("created_at", 0);
-    await prefs.reload();
     _oauth = null;
+    _createdAt = null;
     Global.profile.oauth = null;
-  }
-
-  ///是否已经登录
-  /// *仅判断本地是否已经存有user*
-  bool get isAuthorized {
-    final String accessToken = _oauth?.access_token ?? Global.profile.oauth?.access_token;
-    return accessToken != null && accessToken.isNotEmpty;
-  }
-
-  ///判断是access_token是否过期
-  bool get isExpired {
-    if (_createdAt != null && isAuthorized) {
-      return _createdAt.add(Duration(seconds: _oauth?.expires_in ?? 0)).isBefore(DateTime.now());
+    Global.profile.user = null;
+    for (final dio in [GiteeApi.dioV3, GiteeApi.dioV5]) {
+      dio.options.headers.remove(HttpHeaders.authorizationHeader);
     }
-    return true;
+    Global.netCache.cache.clear();
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in [
+      'access_token',
+      'refresh_token',
+      'scope',
+      'expires_in',
+      'created_at',
+    ]) {
+      await prefs.remove(key);
+    }
+    await Global.saveProfile();
+  }
+
+  bool get isAuthorized => token()?.isNotEmpty == true;
+
+  bool get isExpired {
+    final createdAt = _createdAt;
+    if (createdAt == null || !isAuthorized) return true;
+    return !createdAt
+        .add(Duration(seconds: (_oauth?.expires_in ?? 0).toInt()))
+        .isAfter(DateTime.now());
   }
 
   Future<bool> refreshAccessToken() async {
+    final refreshToken = _oauth?.refresh_token;
+    if (refreshToken == null || refreshToken.isEmpty) return false;
     try {
-      var data = await GiteeApi().refreshToken(_oauth?.refresh_token);
-      await storeToken(data);
+      await storeToken(await GiteeApi().refreshToken(refreshToken));
       return true;
-    } catch (e) {
-      print("refreshAccessToken Error -> $e");
+    } catch (_) {
       return false;
     }
   }
 
-  DateTime _resetCreatedAt(int time) => _createdAt = DateTime.fromMillisecondsSinceEpoch(time * 1000);
-
-  @override
-  String toString() {
-    return "hasToken: ${isAuthorized} | 有效期: ${_oauth?.expires_in} | 创建日期：$_createdAt | 是否过期：$isExpired";
+  void _resetCreatedAt(int time) {
+    _createdAt = DateTime.fromMillisecondsSinceEpoch(time * 1000);
   }
 
-  Future<void> logout() async {
-    await resetToken();
-    _createdAt = null;
-    Global.profile.user = null;
-    Global.profile.oauth = null;
-    GiteeApi.dioV3.options.headers.remove(HttpHeaders.authorizationHeader);
-    Global.netCache.cache.clear();
-    await Global.saveProfile();
-  }
+  Future<void> logout() => resetToken();
 }

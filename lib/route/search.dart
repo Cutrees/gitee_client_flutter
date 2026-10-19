@@ -2,21 +2,231 @@ import '../index.dart';
 
 class SearchPageRoute extends StatefulWidget {
   @override
-  _SearchPageRouteState createState() {
-    return _SearchPageRouteState();
-  }
+  State<SearchPageRoute> createState() => _SearchPageRouteState();
 }
 
 class _SearchPageRouteState extends State<SearchPageRoute>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  String searchWords;
-  var statusBarHeight; //状态栏高度
-  TabController tabController;
-  Color backColor; //当前页面的主题色，为默认主题色
-  TextEditingController _editController = TextEditingController();
-  List<String> historyData = new List<String>();
+    with SingleTickerProviderStateMixin {
+  final _editController = TextEditingController();
+  late final TabController _tabController;
+  late final List<String> _history;
+  String _searchWords = '';
 
-  var mTabs = <String>['仓库', "用户"];
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _history = List.of(
+      Global.prefs.getStringList(PREFS_SEARCH_HISTORY) ?? <String>[],
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _editController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _beginSearch() async {
+    final words = _editController.text.trim();
+    if (words.isEmpty) {
+      showToast('搜索内容不能为空');
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _editController.text = words;
+      _searchWords = words;
+      _history.remove(words);
+      _history.insert(0, words);
+    });
+    await Global.prefs.setStringList(PREFS_SEARCH_HISTORY, _history);
+  }
+
+  Future<void> _clearHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: const Text('确定要清空所有搜索历史记录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(_history.clear);
+    await Global.prefs.setStringList(PREFS_SEARCH_HISTORY, _history);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: TextField(
+          controller: _editController,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _beginSearch(),
+          decoration: InputDecoration(
+            hintText: '搜索仓库或用户',
+            border: InputBorder.none,
+            suffixIcon: IconButton(
+              onPressed: _editController.clear,
+              icon: const Icon(Icons.clear),
+            ),
+          ),
+        ),
+        actions: [TextButton(onPressed: _beginSearch, child: const Text('搜索'))],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '仓库'),
+            Tab(text: '用户'),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Expanded(child: Text('搜索历史')),
+                IconButton(
+                  tooltip: '清空搜索历史',
+                  onPressed: _clearHistory,
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 44,
+            child: _history.isEmpty
+                ? const Center(child: Text('暂时没有搜索记录'))
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _history.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) => ActionChip(
+                      label: Text(_history[index]),
+                      onPressed: () {
+                        _editController.text = _history[index];
+                        _beginSearch();
+                      },
+                    ),
+                  ),
+          ),
+          Expanded(
+            child: _searchWords.isEmpty
+                ? Center(
+                    child: Icon(
+                      Icons.search,
+                      size: 90,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  )
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _SearchResultList<Repo>(
+                        key: ValueKey('repos:$_searchWords'),
+                        retrieve: (page, refresh) => GiteeApi().searchRepos(
+                          keyWords: _searchWords,
+                          refresh: refresh,
+                          queryParameters: {
+                            'page': page,
+                            'per_page': GiteeApi.perPage,
+                          },
+                        ),
+                        itemBuilder: (context, repo) => ListTile(
+                          leading: getAvatarCircle(
+                            repo.owner?.avatar_url ?? repo.owner?.portrait_url,
+                            radius: 40,
+                          ),
+                          title: Text(repo.full_name ?? repo.name ?? ''),
+                          subtitle: Text(repo.description ?? ''),
+                          trailing: Text(repo.language ?? ''),
+                          onTap: () {
+                            final url = repo.html_url;
+                            if (url != null && checkUrl(url))
+                              navToWeb(context: context, url: url);
+                          },
+                        ),
+                      ),
+                      _SearchResultList<User>(
+                        key: ValueKey('users:$_searchWords'),
+                        retrieve: (page, refresh) => GiteeApi().searchUsers(
+                          keyWords: _searchWords,
+                          refresh: refresh,
+                          queryParameters: {
+                            'page': page,
+                            'per_page': GiteeApi.perPage,
+                          },
+                        ),
+                        itemBuilder: (context, user) {
+                          final login = user.login ?? '';
+                          final name = user.name;
+                          final url =
+                              user.html_url ??
+                              (login.isEmpty
+                                  ? null
+                                  : '${BASE_URL}${Uri.encodeComponent(login)}');
+                          return ListTile(
+                            leading: getAvatarCircle(
+                              user.avatar_url ?? user.portrait_url,
+                              radius: 40,
+                            ),
+                            title: Text(
+                              name == null || name.isEmpty ? login : name,
+                            ),
+                            subtitle: Text(login.isEmpty ? '' : '@$login'),
+                            onTap: url != null && checkUrl(url)
+                                ? () => navToWeb(context: context, url: url)
+                                : null,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchResultList<T> extends StatefulWidget {
+  const _SearchResultList({
+    super.key,
+    required this.retrieve,
+    required this.itemBuilder,
+  });
+  final Future<List<T>> Function(int page, bool refresh) retrieve;
+  final Widget Function(BuildContext context, T item) itemBuilder;
+
+  @override
+  State<_SearchResultList<T>> createState() => _SearchResultListState<T>();
+}
+
+class _SearchResultListState<T> extends State<_SearchResultList<T>>
+    with AutomaticKeepAliveClientMixin {
+  final List<T> _items = [];
+  int _nextPage = 1;
+  int _generation = 0;
+  bool _loading = false;
+  bool _hasMore = true;
+  bool _failed = false;
+  bool _retryRefresh = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -24,385 +234,97 @@ class _SearchPageRouteState extends State<SearchPageRoute>
   @override
   void initState() {
     super.initState();
-    statusBarHeight = getStatusBarHeight();
-    tabController = TabController(length: 2, vsync: this);
-    var shareData = Global.prefs.getStringList(PREFS_SEARCH_HISTORY);
-    if (shareData != null && shareData.length > 0) {
-      historyData.addAll(shareData);
-    }
+    _load();
   }
 
-  @override
-  void dispose() {
-    tabController.dispose();
-    _editController.dispose();
-    Global.prefs.setStringList(PREFS_SEARCH_HISTORY, historyData);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    backColor = getThemePrimaryColor(context);
-
-    return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            //搜索框，一个状态栏大小的背景
-            _buildSearchBox(),
-
-            //搜索历史记录
-            SliverPersistentHeader(
-              pinned: false,
-              delegate: MySliverPersistentHeaderDelegate(
-                minHeight: 80,
-                maxHeight: 110,
-                child: Container(
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                          top: BorderSide(color: Color(0xffececec), width: 5),
-                          bottom: BorderSide(color: Color(0xffececec), width: 5))),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                '搜索历史',
-                                style: TextStyle(
-                                  color: backColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.only(top: 8),
-                              child: InkWell(
-                                child: Icon(
-                                  Icons.delete,
-                                  color: Colors.grey,
-                                  size: 20,
-                                ),
-                                onTap: () {
-                                  _showClearHistoryDialog();
-                                },
-                              ),
-                            )
-                          ],
-                        ),
-                        Container(
-                          padding: EdgeInsets.only(top: 10.0),
-                          height: 40,
-                          width: double.infinity,
-                          child: _buildHistory(),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            //状态栏
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: MySliverPersistentHeaderDelegate(
-                minHeight: 45,
-                maxHeight: 45,
-                child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                    ),
-                    child: TabBar(
-                      labelColor: backColor,
-                      labelStyle: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
-                      unselectedLabelColor: Colors.grey,
-                      indicatorColor: backColor,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      controller: tabController,
-                      tabs: mTabs.map((String label) => Tab(text: label)).toList(),
-                    )),
-              ),
-            ),
-          ];
-        },
-        body: _buildBody(),
-      ),
-    );
-  }
-
-  _beginSearch() async {
-    final words = _editController.text.trim();
-    if (words.length <= 0) {
-      showToast("搜索内容不能为空");
-    } else {
-      _editController.text = words;
+  Future<void> _load({bool refresh = false}) async {
+    if (!refresh && (_loading || !_hasMore)) return;
+    final generation = refresh ? ++_generation : _generation;
+    final page = refresh ? 1 : _nextPage;
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      final data = await widget.retrieve(page, refresh);
+      if (!mounted || generation != _generation) return;
       setState(() {
-        searchWords = words;
+        if (refresh) _items.clear();
+        _items.addAll(data);
+        _nextPage = page + 1;
+        _hasMore = data.length >= GiteeApi.perPage;
       });
-      //如果搜索的字段不在历史记录中，添加到历史记录
-      if (!historyData.contains(searchWords)) {
-        setState(() {
-          historyData.add(searchWords);
-        });
-      }
-      //搜索完成收起软键盘
-      FocusScope.of(context).unfocus();
+    } catch (_) {
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _failed = true;
+        _retryRefresh = refresh;
+      });
+    } finally {
+      if (mounted && generation == _generation)
+        setState(() => _loading = false);
     }
   }
-
-  //搜索框
-  Widget _buildSearchBox() => SliverPersistentHeader(
-        pinned: true,
-        delegate: MySliverPersistentHeaderDelegate(
-          minHeight: statusBarHeight + 57,
-          maxHeight: statusBarHeight + 57,
-          child: Container(
-            padding: EdgeInsets.only(top: statusBarHeight),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                GestureDetector(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: 15, right: 15),
-                    child: Icon(
-                      Icons.arrow_back,
-                      color: backColor,
-                      size: 22,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5),
-                    child: TextField(
-                      controller: _editController,
-                      autofocus: false,
-                      maxLines: 1,
-                      style: TextStyle(fontSize: 14),
-                      cursorColor: backColor,
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (val) {
-                        _beginSearch();
-                      },
-                      decoration: InputDecoration(
-                        //密集排布
-                        isDense: true,
-                        prefixIcon: InkWell(
-                          highlightColor: Colors.lightBlueAccent,
-                          child: Icon(
-                            Icons.search,
-                            color: Colors.grey,
-                          ),
-                          onTap: () {
-                            _beginSearch();
-                          },
-                        ),
-                        suffixIcon: InkWell(
-                          child: Icon(
-                            Icons.clear,
-                            color: Colors.grey,
-                          ),
-                          onTap: () {
-                            _editController.clear();
-                          },
-                        ),
-                        hintText: '搜索或者跳转到...',
-                        hintStyle: TextStyle(fontSize: 14),
-
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide.none,
-                          borderRadius: BorderRadius.all(Radius.circular(5)),
-                        ),
-
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: backColor,
-                            width: .3,
-                          ),
-                          borderRadius: BorderRadius.all(Radius.circular(5)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                InkWell(
-                    child: Padding(
-                      padding: EdgeInsets.only(left: 15, right: 15),
-                      child: Text(
-                        "搜索",
-                        style: TextStyle(fontSize: 15, color: backColor),
-                      ),
-                    ),
-                    onTap: () {
-                      _beginSearch();
-                    }),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  //搜索历史
-  Widget _buildHistory() {
-    if (historyData == null || historyData.length == 0) {
-      return Container(
-        padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child: Center(
-          child: Text(
-            '暂时没有搜索记录',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-        ),
-      );
-    }
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: historyData.length,
-      itemBuilder: (BuildContext context, int index) {
-        return InkWell(
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-            margin: EdgeInsets.only(right: 10),
-            color: Color(0xffececec),
-            child: Center(
-              child: Text(
-                historyData[index],
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ),
-          onTap: () {
-            _editController.text = historyData[index];
-            _beginSearch();
-          },
-        );
-      },
-    );
-  }
-
-  //清空历史记录
-  void _showClearHistoryDialog() {
-    if (historyData != null && historyData.length > 0) {
-      showDialog<bool>(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              content: Text("确定要清空所有搜索历史记录吗？"),
-              actions: <Widget>[
-                FlatButton(
-                  child: Text('取消'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                FlatButton(
-                    child: Text('确定'),
-                    onPressed: () {
-                      setState(() {
-                        historyData.clear();
-                      });
-                      Navigator.of(context).pop();
-                    })
-              ],
-            );
-          });
-    } else {
-      showToast('暂时没有搜索记录');
-    }
-  }
-
-  //搜索结果
-  _buildBody() {
-    if (searchWords == null || searchWords.length <= 0) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.only(top: 60),
-          child: InkWell(
-            child: Hero(
-              tag: hero_tag_search,
-              child: Icon(
-                Icons.search,
-                color: Theme.of(context).primaryColor,
-                size: 90,
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return TabBarView(
-        controller: tabController,
-        children: <Widget>[
-          _SearchPageRepoList(
-            key: ValueKey<String>(searchWords),
-            searchWords: searchWords,
-          ),
-          Center(child: Text('用户搜索暂未实现'))
-        ],
-      );
-    }
-  }
-}
-
-class _SearchPageRepoList extends StatefulWidget {
-  _SearchPageRepoList({Key key, @required this.searchWords}) : super(key: key);
-
-  final String searchWords;
-
-  @override
-  State<StatefulWidget> createState() {
-    return _SearchPageRepoListState();
-  }
-}
-
-class _SearchPageRepoListState extends State<_SearchPageRepoList> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return MediaQuery.removePadding(
-      removeTop: true,
-      context: context,
-      child: InfiniteListView<RepoV3>(
-        onRetrieveData: (int page, List<RepoV3> items, bool refresh) async {
-          var data = await GiteeApi().searchReposV3(
-            keyWords: widget.searchWords,
-            refresh: refresh, //下拉刷新时清理缓存，避免取到旧结果
-            queryParameters: {
-              'page': page,
-            },
-          );
-          //把请求到的新数据添加到items中
-          items.addAll(data);
-          // 如果接口返回的数量等于'page_size'，则认为还有数据，反之则认为最后一页
-          //return data.length == 30;
-          return data.length > 0 && data.length % 20 == 0;
+    return RefreshIndicator(
+      onRefresh: () => _load(refresh: true),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.metrics.extentAfter < 200 &&
+              !_failed &&
+              _items.isNotEmpty)
+            _load();
+          return false;
         },
-        emptyBuilder: (VoidCallback refresh, BuildContext context) {
-          return listNoDataView(refresh, context);
-        },
-        itemBuilder: (List list, int index, BuildContext ctx) {
-          // 项目信息列表项
-          return RepoListItemWidgetV3(list[index]);
-        },
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: _items.length + 1,
+          itemBuilder: (context, index) {
+            if (index < _items.length)
+              return widget.itemBuilder(context, _items[index]);
+            if (_loading)
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            if (_failed)
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Text('搜索失败，请检查网络后重试'),
+                    TextButton(
+                      onPressed: () =>
+                          _load(refresh: _retryRefresh || _items.isEmpty),
+                      child: const Text('重试'),
+                    ),
+                  ],
+                ),
+              );
+            if (_items.isEmpty)
+              return Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    const Text('没有搜索结果'),
+                    TextButton(
+                      onPressed: () => _load(refresh: true),
+                      child: const Text('刷新'),
+                    ),
+                  ],
+                ),
+              );
+            if (_hasMore)
+              return TextButton(onPressed: _load, child: const Text('加载更多'));
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('没有更多结果')),
+            );
+          },
+        ),
       ),
     );
   }

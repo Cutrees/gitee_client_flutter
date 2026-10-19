@@ -2,50 +2,47 @@
 
 part of 'pullRequest.dart';
 
-// **************************************************************************
-// JsonSerializableGenerator
-// **************************************************************************
-
-PullRequest _$PullRequestFromJson(Map<String, dynamic> json) {
-  return PullRequest()
-    ..id = json['id'] as num
-    ..url = json['url'] as String
-    ..html_url = json['html_url'] as String
-    ..diff_url = json['diff_url'] as String
-    ..patch_url = json['patch_url'] as String
-    ..issue_url = json['issue_url'] as String
-    ..commits_url = json['commits_url'] as String
-    ..review_comments_url = json['review_comments_url'] as String
-    ..review_comment_url = json['review_comment_url'] as String
-    ..comments_url = json['comments_url'] as String
-    ..statuses_url = json['statuses_url'] as String
-    ..number = json['number'] as num
-    ..state = json['state'] as String
-    ..title = json['title'] as String
-    ..body = json['body'] as String
-    ..assignees_number = json['assignees_number'] as num
-    ..testers_number = json['testers_number'] as num
-    ..assignees = json['assignees'] as List
-    ..testers = json['testers'] as List
-    ..milestone = json['milestone'] as String
-    ..labels = json['labels'] as List
-    ..locked = json['locked'] as bool
-    ..created_at = json['created_at'] as String
-    ..updated_at = json['updated_at'] as String
-    ..closed_at = json['closed_at'] as String
-    ..merged_at = json['merged_at'] as String
-    ..mergeable = json['mergeable'] as bool
-    ..can_merge_check = json['can_merge_check'] as bool
-    ..head = json['head'] == null
-        ? null
-        : Head.fromJson(json['head'] as Map<String, dynamic>)
-    ..base = json['base'] == null
-        ? null
-        : Base.fromJson(json['base'] as Map<String, dynamic>)
-    ..user = json['user'] == null
-        ? null
-        : User.fromJson(json['user'] as Map<String, dynamic>);
-}
+PullRequest _$PullRequestFromJson(Map<String, dynamic> json) => PullRequest()
+  ..id = json['id'] as num?
+  ..url = json['url'] as String?
+  ..html_url = json['html_url'] as String?
+  ..diff_url = json['diff_url'] as String?
+  ..patch_url = json['patch_url'] as String?
+  ..issue_url = json['issue_url'] as String?
+  ..commits_url = json['commits_url'] as String?
+  ..review_comments_url = json['review_comments_url'] as String?
+  ..review_comment_url = json['review_comment_url'] as String?
+  ..comments_url = json['comments_url'] as String?
+  ..statuses_url = json['statuses_url'] as String?
+  ..number = json['number'] as num?
+  ..state = json['state'] as String?
+  ..title = json['title'] as String?
+  ..body = json['body'] as String?
+  ..assignees_number = json['assignees_number'] as num?
+  ..testers_number = json['testers_number'] as num?
+  ..assignees = json['assignees'] as List<dynamic>?
+  ..testers = json['testers'] as List<dynamic>?
+  ..milestone = json['milestone'] as String?
+  ..labels = json['labels'] as List<dynamic>?
+  ..locked = json['locked'] as bool?
+  ..created_at = json['created_at'] as String?
+  ..updated_at = json['updated_at'] as String?
+  ..closed_at = json['closed_at'] as String?
+  ..merged_at = json['merged_at'] as String?
+  ..mergeable = json['mergeable'] as bool?
+  ..can_merge_check = json['can_merge_check'] as bool?
+  ..head = json['head'] == null
+      ? null
+      : Head.fromJson(json['head'] as Map<String, dynamic>)
+  ..base = json['base'] == null
+      ? null
+      : Base.fromJson(json['base'] as Map<String, dynamic>)
+  ..user = json['user'] == null
+      ? null
+      : User.fromJson(json['user'] as Map<String, dynamic>)
+  ..links = json['_links'] == null
+      ? null
+      : Links.fromJson(json['_links'] as Map<String, dynamic>);
 
 Map<String, dynamic> _$PullRequestToJson(PullRequest instance) =>
     <String, dynamic>{
@@ -79,5 +76,6 @@ Map<String, dynamic> _$PullRequestToJson(PullRequest instance) =>
       'can_merge_check': instance.can_merge_check,
       'head': instance.head,
       'base': instance.base,
-      'user': instance.user
+      'user': instance.user,
+      '_links': instance.links,
     };

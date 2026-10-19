@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+
 import "user.dart";
 import "oauth.dart";
 import "cacheConfig.dart";
@@ -6,15 +7,16 @@ part 'profile.g.dart';
 
 @JsonSerializable()
 class Profile {
-    Profile();
+  Profile();
 
-    User user;
-    Oauth oauth;
-    num theme;
-    CacheConfig cache;
-    String lastLogin;
-    String locale;
-    
-    factory Profile.fromJson(Map<String,dynamic> json) => _$ProfileFromJson(json);
-    Map<String, dynamic> toJson() => _$ProfileToJson(this);
+  User? user;
+  Oauth? oauth;
+  num? theme;
+  CacheConfig? cache;
+  String? lastLogin;
+  String? locale;
+
+  factory Profile.fromJson(Map<String, dynamic> json) =>
+      _$ProfileFromJson(json);
+  Map<String, dynamic> toJson() => _$ProfileToJson(this);
 }

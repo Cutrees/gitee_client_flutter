@@ -1,8 +1,13 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
-  MySliverPersistentHeaderDelegate({@required this.minHeight, @required this.maxHeight, @required this.child});
+  MySliverPersistentHeaderDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+  });
 
   final double minHeight;
   final double maxHeight;
@@ -15,9 +20,15 @@ class MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => max(maxHeight, minHeight);
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => SizedBox.expand(child: child);
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => SizedBox.expand(child: child);
 
   @override
   bool shouldRebuild(MySliverPersistentHeaderDelegate oldDelegate) =>
-      maxHeight != oldDelegate.maxExtent || minHeight != oldDelegate.minExtent || child != oldDelegate.child;
+      maxHeight != oldDelegate.maxExtent ||
+      minHeight != oldDelegate.minExtent ||
+      child != oldDelegate.child;
 }

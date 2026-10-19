@@ -1,19 +1,8 @@
 import 'package:flutter/material.dart';
 
-///  BadgeWidget 小红点控件
-///  由两部分控件组成: 中间控件 + 右上角/其他位置的红点显示(注:红点数据支持异步加载)
-///
-/// BadgeWidget(
-///   future: GiteeApi().notificationCount(true),
-///   centerIconData: Icons.notifications_none,
-///   smallTextBgColor: Colors.red,
-///   smallTextMarginRight: 12,
-///   smallTextMarginTop: 12,
-///   onPressed: () { ... },
-/// ),
-class BadgeWidget<T> extends StatefulWidget {
-  BadgeWidget({
-    Key key,
+class BadgeWidget<T> extends StatelessWidget {
+  const BadgeWidget({
+    super.key,
     this.future,
     this.centerWidget,
     this.centerIconData,
@@ -26,109 +15,65 @@ class BadgeWidget<T> extends StatefulWidget {
     this.smallTextMarginTop,
     this.smallTextMarginRight,
     this.smallTextMarginBottom,
-  }) : super(key: key);
+  }) : assert(centerWidget != null || centerIconData != null);
 
-  final Future<T> future;
-  final GestureTapCallback onPressed;
-  final Widget centerWidget;
-  final IconData centerIconData;
-  final int smallText;
-  final TextStyle smallTextStyle;
-  final Color smallTextBgColor;
-  final EdgeInsetsGeometry smallTextPadding;
-  bool showNumber = false;
-
-  //红点距离边界位置,默认右上角
-  final double smallTextMarginLeft, smallTextMarginTop, smallTextMarginRight, smallTextMarginBottom;
-
-  @override
-  _BadgeWidgetState createState() => _BadgeWidgetState();
-}
-
-class _BadgeWidgetState extends State<BadgeWidget> {
-  @override
-  void initState() {
-    super.initState();
-    //centerWidget,centerIconData至少设置了一个
-    if (widget.centerWidget == null && widget.centerIconData == null) {
-      throw ('centerWidget,centerIconData至少设置了一个');
-    }
-    //首次构建时也要根据future决定是否显示红点，否则首次不显示
-    widget.showNumber = (widget.future != null);
-  }
-  @override
-  void didUpdateWidget(BadgeWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    widget.showNumber = (widget.future != null);
-  }
+  final Future<T>? future;
+  final GestureTapCallback? onPressed;
+  final Widget? centerWidget;
+  final IconData? centerIconData;
+  final int? smallText;
+  final TextStyle? smallTextStyle;
+  final Color? smallTextBgColor;
+  final EdgeInsetsGeometry? smallTextPadding;
+  final double? smallTextMarginLeft;
+  final double? smallTextMarginTop;
+  final double? smallTextMarginRight;
+  final double? smallTextMarginBottom;
 
   @override
   Widget build(BuildContext context) {
+    final request = future;
+    if (request == null) return _buildBadge(smallText?.toString());
+    return FutureBuilder<T>(
+      future: request,
+      builder: (context, snapshot) =>
+          _buildBadge(snapshot.hasError ? null : snapshot.data?.toString()),
+    );
+  }
+
+  Widget _buildBadge(String? value) {
+    final count = num.tryParse(value ?? '') ?? 0;
     return Stack(
       alignment: Alignment.center,
-      fit: StackFit.passthrough,
       children: [
         Center(
-          child: widget.centerWidget ??
-              IconButton(
-                icon: Icon(widget.centerIconData),
-                onPressed: widget.onPressed,
-              ),
+          child:
+              centerWidget ??
+              IconButton(icon: Icon(centerIconData), onPressed: onPressed),
         ),
-        _buildPositionedNumber(),
+        if (count > 0)
+          Positioned(
+            left: smallTextMarginLeft,
+            top: smallTextMarginTop ?? 0,
+            right: smallTextMarginRight ?? 0,
+            bottom: smallTextMarginBottom,
+            child: IgnorePointer(
+              child: Container(
+                padding: smallTextPadding ?? const EdgeInsets.all(2.2),
+                decoration: BoxDecoration(
+                  color: smallTextBgColor ?? Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  count > 99 ? '99+' : value ?? '',
+                  style:
+                      smallTextStyle ??
+                      const TextStyle(color: Colors.white, fontSize: 8),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
-
-  Widget _buildPositionedNumber() {
-    if (!widget.showNumber) return Container(width: 0, height: 0);
-    return Positioned(
-      left: widget.smallTextMarginLeft,
-      top: widget.smallTextMarginTop,
-      right: widget.smallTextMarginRight,
-      bottom: widget.smallTextMarginBottom,
-      child: ClipOval(
-        child: Container(
-            color: widget.showNumber ? widget.smallTextBgColor ?? Colors.red : Colors.transparent,
-            child: Center(
-              child: Padding(
-                padding: widget.smallTextPadding ?? EdgeInsets.all(2.2),
-                child: _buildNumber(),
-              ),
-            )),
-      ),
-      //smallTextNum
-    );
-  }
-
-  Widget _buildNumber() {
-    final bool isAsync = (widget?.future != null) ?? false;
-    if (isAsync) {
-      return FutureBuilder<String>(
-        future: widget?.future,
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return Text(
-              snapshot.data ?? "",
-              style: _numberTextStyle(),
-            );
-          }
-          return Container(width: 0, height: 0);
-        },
-      );
-    } else {
-      return Text(
-        widget.showNumber ? widget?.smallText?.toString() ?? "" : "",
-        style: _numberTextStyle(),
-      );
-    }
-  }
-
-  TextStyle _numberTextStyle() =>
-      widget.smallTextStyle ??
-      TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontSize: 8,
-      );
 }

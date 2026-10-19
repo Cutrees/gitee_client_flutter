@@ -1,229 +1,124 @@
 import '../index.dart';
 
-//项目列表 ItemView v3
-class RepoListItemWidgetV3 extends StatefulWidget {
+class RepoListItemWidgetV3 extends StatelessWidget {
   RepoListItemWidgetV3(this.repo) : super(key: ValueKey(repo.id));
   final RepoV3 repo;
 
   @override
-  _RepoListItemWidgetV3State createState() => _RepoListItemWidgetV3State();
-}
-
-class _RepoListItemWidgetV3State extends State<RepoListItemWidgetV3> {
-  @override
   Widget build(BuildContext context) {
-    //print(" widget.repo == > ${widget.repo.toString()}");
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5.0),
-      child: Material(
-        color: Colors.white,
-        shape: BorderDirectional(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: .5,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 5.0, bottom: 5.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              ListTile(
-                dense: true,
-                leading: getAvatarRect(
-                  //项目owner头像
-                  widget.repo.owner.avatar_url ?? widget.repo.owner.portrait_url,
-                  width: 35.0,
-                  fit: BoxFit.cover,
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                title: Text(
-                  widget.repo.name_with_namespace,
-                  textScaleFactor: .9,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+    final path = repo.path_with_namespace;
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: getAvatarRect(
+              repo.owner?.avatar_url ?? repo.owner?.portrait_url,
+              width: 35,
+            ),
+            title: Text(repo.name_with_namespace ?? repo.name ?? '未命名仓库'),
+            subtitle: Text(
+              repo.description ?? GmLocalizations.of(context).noDescription,
+            ),
+            onTap: path == null || path.isEmpty
+                ? null
+                : () => navToWeb(
+                    context: context,
+                    url: Uri.parse(BASE_URL).resolve(path).toString(),
                   ),
-                ),
-                subtitle: Text(
-                  widget.repo.description ?? "",
-                  style: TextStyle(
-                    color: Colors.grey,
-                  ),
-                ),
-                // trailing: Text(
-                //   widget.repo.language ?? "",
-                //   style: TextStyle(color: Colors.deepOrange[700],fontSize: 11),
-                // ),
-                onTap: () {
-                  navToWeb(context: context, url: "$BASE_URL${widget.repo.path_with_namespace}");
-                },
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(72, 5, 5, 5),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    //Text( "aaa${sem_fork}bbb \u{1f605} cccc \u{f06e} ddd \u{f005} eee \u{2665} fff"),
-
-                    //iconfont.cn
-                    RichText(
-                      text: TextSpan(children: [
-                        WidgetSpan(
-                            child: Icon(
-                          MyIcons.watch,
-                          color: Colors.grey,
-                          size: 15,
-                        )),
-                        WidgetSpan(
-                            child: Text("${widget.repo?.watches_count?.toString()}     ",
-                                style: TextStyle(fontSize: 12, color: Colors.grey))),
-                        WidgetSpan(
-                            child: Icon(
-                          MyIcons.star,
-                          color: Colors.grey,
-                          size: 15,
-                        )),
-                        WidgetSpan(
-                            child: Text("${widget.repo?.stars_count?.toString()}     ",
-                                style: TextStyle(fontSize: 12, color: Colors.grey))),
-                        WidgetSpan(
-                            child: Icon(
-                          MyIcons.branch,
-                          color: Colors.grey,
-                          size: 15,
-                        )),
-                        WidgetSpan(
-                            child: Text("${widget.repo?.forks_count?.toString()}     ",
-                                style: TextStyle(fontSize: 12, color: Colors.grey))),
-                        WidgetSpan(
-                            child: Icon(
-                          MyIcons.tag,
-                          color: Colors.grey,
-                          size: 15,
-                        )),
-                        WidgetSpan(
-                            child: Text("${widget.repo?.language?.toString()}",
-                                style: TextStyle(fontSize: 12, color: Colors.grey))),
-                      ]),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(72, 0, 16, 12),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                IconText(
+                  '${repo.watches_count ?? 0}',
+                  icon: const Icon(MyIcons.watch, size: 15),
+                ),
+                IconText(
+                  '${repo.stars_count ?? 0}',
+                  icon: const Icon(MyIcons.star, size: 15),
+                ),
+                IconText(
+                  '${repo.forks_count ?? 0}',
+                  icon: const Icon(MyIcons.branch, size: 15),
+                ),
+                if (repo.language?.isNotEmpty ?? false)
+                  IconText(
+                    repo.language,
+                    icon: const Icon(MyIcons.tag, size: 15),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+        ],
       ),
     );
   }
 }
 
-// 项目列表
 class RepoListWidget extends StatefulWidget {
-  RepoListWidget(this.tab, {Key key}) : super(key: ValueKey(tab));
+  RepoListWidget(this.tab, {Key? key}) : super(key: key ?? ValueKey(tab));
   final int tab;
 
   @override
-  _RepoListWidgetState createState() => _RepoListWidgetState();
+  State<RepoListWidget> createState() => _RepoListWidgetState();
 }
 
-class _RepoListWidgetState extends State<RepoListWidget> with AutomaticKeepAliveClientMixin {
+class _RepoListWidgetState extends State<RepoListWidget>
+    with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => true; //导航栏切换时保持原有状态
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); //AutomaticKeepAliveClientMixin必须调用
+    super.build(context);
     return MediaQuery.removePadding(
       removeTop: true,
       context: context,
       child: InfiniteListView<Repo>(
         pageSize: 20,
-        onRetrieveData: (int page, List<Repo> items, bool refresh) async {
-          List<Repo> data;
-          if (widget.tab == 0) {
-            data = await GiteeApi().getRepoList(page);
-          } else if (widget.tab == 1) {
-            data = await GiteeApi().getRepoStarList(page: page);
-          }
-          data ??= <Repo>[];
-          items.addAll(data); // 把请求到的新数据添加到items中
-          return data.length > 0 && data.length % 20 == 0;
+        onRetrieveData: (page, items, refresh) async {
+          final data = widget.tab == 0
+              ? await GiteeApi().getRepoList(page)
+              : await GiteeApi().getRepoStarList(page: page);
+          items.addAll(data);
+          return data.length == 20;
         },
-        emptyBuilder: (VoidCallback refresh, BuildContext context) => listNoDataView(refresh, context),
-        itemBuilder: (List<Repo> list, int index, BuildContext ctx) => RepoListItemWidget(list[index]),
-        // 项目信息列表项
-        separatorBuilder: (List<Repo> list, int index, BuildContext ctx) =>
-            Container(height: 5, color: Colors.transparent),
+        emptyBuilder: listNoDataView,
+        itemBuilder: (list, index, context) => RepoListItemWidget(list[index]),
+        separatorBuilder: (list, index, context) => const SizedBox(height: 5),
       ),
     );
   }
 }
 
-//项目列表 ItemView
-class RepoListItemWidget extends StatefulWidget {
+class RepoListItemWidget extends StatelessWidget {
   RepoListItemWidget(this.repo) : super(key: ValueKey(repo.id));
   final Repo repo;
 
   @override
-  _RepoItemWidgetState createState() => _RepoItemWidgetState();
-}
-
-class _RepoItemWidgetState extends State<RepoListItemWidget> {
-  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5.0),
-      child: Material(
-        color: Colors.white,
-        shape: BorderDirectional(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: .5,
-          ),
+    final url = repo.html_url;
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: ListTile(
+        leading: getAvatarRect(
+          repo.owner?.avatar_url ?? repo.owner?.portrait_url,
+          width: 35,
         ),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 5.0, bottom: 5.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              ListTile(
-                dense: true,
-                leading: getAvatarRect(
-                  //项目owner头像
-                  widget.repo?.owner?.avatar_url ?? widget.repo.owner.portrait_url,
-                  width: 35.0,
-                  fit: BoxFit.cover,
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                title: Text(
-                  widget.repo?.full_name ?? "",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                subtitle: Text(
-                  widget.repo?.description ?? "",
-                  style: TextStyle(
-                    color: Colors.grey,
-                  ),
-                ),
-                trailing: Text(
-                  widget.repo.language ?? "",
-                  style: TextStyle(
-                    color: Colors.deepOrange[700],
-                    fontSize: 11,
-                  ),
-                ),
-                onTap: () {
-                  navToWeb(context: context, url: widget?.repo?.namespace?.html_url ?? "");
-                },
-              ),
-            ],
-          ),
+        title: Text(repo.full_name ?? repo.name ?? '未命名仓库'),
+        subtitle: Text(
+          repo.description ?? GmLocalizations.of(context).noDescription,
         ),
+        trailing: Text(repo.language ?? ''),
+        onTap: url == null || url.isEmpty
+            ? null
+            : () => navToWeb(context: context, url: url),
       ),
     );
   }

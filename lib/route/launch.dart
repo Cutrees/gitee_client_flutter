@@ -1,45 +1,44 @@
 import '../index.dart';
 
 class LaunchWidget extends StatefulWidget {
+  const LaunchWidget({super.key});
   @override
-  State<StatefulWidget> createState() => _LaunchState();
+  State<LaunchWidget> createState() => _LaunchState();
 }
 
 class _LaunchState extends State<LaunchWidget> {
+  bool _failed = false;
   @override
   void initState() {
-    OAuth().prepare().then((oauth) {
-      Future.delayed(Duration(milliseconds: 100)).then((_) {
-        if (!mounted) return;
-        // if ((oauth as OAuth).isAuthorized) {
-        //   Navigator.of(context).pushReplacementNamed("/router/home");
-        // } else {
-        //   Navigator.of(context).pushReplacementNamed("/router/login");
-        // }
-        Navigator.of(context).pushReplacementNamed(page_main);
-      });
-    });
     super.initState();
+    _prepare();
+  }
+
+  Future<void> _prepare() async {
+    try {
+      await OAuth().prepare();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(page_main);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return new Material(
-      child: new Scaffold(
-        body: new Container(
-          color: Theme.of(context).primaryColor,
-          child: Center(
-            child: Text(
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: _failed
+          ? TextButton(
+              onPressed: () {
+                setState(() => _failed = false);
+                _prepare();
+              },
+              child: const Text('初始化失败，点击重试'),
+            )
+          : const Text(
               '码云 Gitee',
-              style: TextStyle(
-                color: Colors.grey[50],
-                fontWeight: FontWeight.bold,
-                fontSize: 25,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
             ),
-          ),
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }

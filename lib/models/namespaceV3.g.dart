@@ -2,30 +2,24 @@
 
 part of 'namespaceV3.dart';
 
-// **************************************************************************
-// JsonSerializableGenerator
-// **************************************************************************
-
-NamespaceV3 _$NamespaceV3FromJson(Map<String, dynamic> json) {
-  return NamespaceV3()
-    ..id = json['id'] as num
-    ..name = json['name'] as String
-    ..path = json['path'] as String
-    ..owner_id = json['owner_id'] as num
-    ..created_at = json['created_at'] as String
-    ..updated_at = json['updated_at'] as String
-    ..description = json['description'] as String
-    ..address = json['address'] as String
-    ..email = json['email'] as String
-    ..url = json['url'] as String
-    ..location = json['location'] as String
-    ..public = json['public'] as bool
-    ..enterprise_id = json['enterprise_id'] as num
-    ..level = json['level'] as num
-    ..from = json['from'] as String
-    ..outsourced = json['outsourced'] as bool
-    ..avatar = json['avatar'] as String;
-}
+NamespaceV3 _$NamespaceV3FromJson(Map<String, dynamic> json) => NamespaceV3()
+  ..id = json['id'] as num?
+  ..name = json['name'] as String?
+  ..path = json['path'] as String?
+  ..owner_id = json['owner_id'] as num?
+  ..created_at = json['created_at'] as String?
+  ..updated_at = json['updated_at'] as String?
+  ..description = json['description'] as String?
+  ..address = json['address'] as String?
+  ..email = json['email'] as String?
+  ..url = json['url'] as String?
+  ..location = json['location'] as String?
+  ..public = json['public'] as bool?
+  ..enterprise_id = json['enterprise_id'] as num?
+  ..level = json['level'] as num?
+  ..from = json['from'] as String?
+  ..outsourced = json['outsourced'] as bool?
+  ..avatar = json['avatar'] as String?;
 
 Map<String, dynamic> _$NamespaceV3ToJson(NamespaceV3 instance) =>
     <String, dynamic>{
@@ -45,5 +39,5 @@ Map<String, dynamic> _$NamespaceV3ToJson(NamespaceV3 instance) =>
       'level': instance.level,
       'from': instance.from,
       'outsourced': instance.outsourced,
-      'avatar': instance.avatar
+      'avatar': instance.avatar,
     };

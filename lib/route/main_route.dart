@@ -1,121 +1,137 @@
 import 'dart:async';
-import '../index.dart';
+import 'package:flutter/services.dart';
 
-//主页
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../index.dart' hide Connectivity, ConnectivityResult;
+
 class MainRoute extends StatefulWidget {
+  const MainRoute({super.key});
+
   @override
-  _MainRouteState createState() => _MainRouteState();
+  State<MainRoute> createState() => _MainRouteState();
 }
 
 class _MainRouteState extends State<MainRoute> {
-  List<Widget> _pageList; //所有页面
-  Map<String, IconData> navItemMap;
-  int _selectedIndex = 0; //底部导航索引位置
-  DateTime _lastPressedAt; //上次点击时间
-  StreamSubscription subscription;
+  late final PageController _pageController;
+  late final List<Widget> _pageList;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  int _selectedIndex = 0;
+  DateTime? _lastPressedAt;
 
   @override
   void initState() {
     super.initState();
-    _pageList = List();
-    _pageList.add(HomeRoute());
-    _pageList.add(DynamicRoute());
-    _pageList.add(MyRoute());
-    subscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      if (result == ConnectivityResult.mobile) {
-        showToast(networkMobile);
-      } else if (result == ConnectivityResult.wifi) {
+    _pageController = PageController();
+    _pageList = [HomeRoute(), DynamicRoute(), MyRoute()];
+    _subscription = Connectivity().onConnectivityChanged.listen((results) {
+      if (!mounted) return;
+      if (results.contains(ConnectivityResult.wifi)) {
         showToast(networkWifi);
-      } else {
+      } else if (results.contains(ConnectivityResult.mobile)) {
+        showToast(networkMobile);
+      } else if (results.isEmpty ||
+          results.every((result) => result == ConnectivityResult.none)) {
         showToast(networkNone);
       }
     });
   }
 
   @override
-  dispose() {
+  void dispose() {
+    _subscription?.cancel();
+    _pageController.dispose();
     super.dispose();
-    subscription?.cancel();
   }
 
   @override
   Widget build(BuildContext context) {
-    var gm = GmLocalizations.of(context);
-    navItemMap = {
-      gm.navHome: Icons.home,
-      gm.navDynamic: Icons.wb_sunny,
-      gm.navMe: Icons.perm_identity,
-    };
-    // return RepoListRoute();
+    final gm = GmLocalizations.of(context);
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final navItems = [
+      (gm.navHome, Icons.home_outlined, Icons.home),
+      (gm.navDynamic, Icons.explore_outlined, Icons.explore),
+      (gm.navMe, Icons.person_outline, Icons.person),
+    ];
 
-    //todo 暂时不要底部导航...
     return Scaffold(
-      bottomNavigationBar: _buildBottomNavigationBar(),
-      body: WillPopScope(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: _pageList,
-        ),
-        onWillPop: () async {
-          if (_lastPressedAt == null || DateTime.now().difference(_lastPressedAt) > Duration(seconds: 2)) {
-            //两次点击间隔超过1s则重新计时
-            _lastPressedAt = DateTime.now();
-            showToast("再点击一次退出应用");
-            return false;
-          }
-          return true;
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) _handlePop();
         },
+        child: PageView.builder(
+          controller: _pageController,
+          itemCount: _pageList.length,
+          physics: const ClampingScrollPhysics(),
+          onPageChanged: (index) {
+            if (mounted) setState(() => _selectedIndex = index);
+          },
+          itemBuilder: (_, index) => _KeptAlivePage(child: _pageList[index]),
+        ),
       ),
-
-      ///Material组件库中提供了一个BottomAppBar 组件，它可以和FloatingActionButton配合实现这种“打洞”效果
-      // bottomNavigationBar: BottomAppBar(
-      //   color: Colors.white,
-      //   shape: CircularNotchedRectangle(), // 底部导航栏打一个圆形的洞
-      //   child: Row(
-      //     children: [
-      //       IconButton(
-      //         icon: Icon(Icons.home),
-      //       ),
-      //       SizedBox(), //中间位置空出
-      //       IconButton(
-      //         icon: Icon(Icons.business),
-      //       ),
-      //     ],
-      //     mainAxisAlignment: MainAxisAlignment.spaceAround, //均分底部导航栏横向空间
-      //   ),
-      // ),
-
-      ///可以看到，上面代码中没有控制打洞位置的属性，实际上，打洞的位置取决于FloatingActionButton的位置:
-      //floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-      ///悬浮按钮
-      // BottomAppBar的shape属性决定洞的外形，CircularNotchedRectangle 实现了一个圆形的外形，
-      /*floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: _onAdd,
-      ),*/
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        animationDuration: reduceMotion ? Duration.zero : null,
+        onDestinationSelected: _onItemTapped,
+        destinations: navItems
+            .map(
+              (item) => NavigationDestination(
+                icon: Icon(item.$2),
+                selectedIcon: Icon(item.$3),
+                label: item.$1,
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
-  //底部导航切换监听
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  void _handlePop() {
+    final now = DateTime.now();
+    if (_lastPressedAt == null ||
+        now.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
+      _lastPressedAt = now;
+      showToast('再点击一次退出应用');
+      return;
+    }
+    SystemNavigator.pop();
   }
 
-  //悬浮按钮事件
-  void _onAdd() {}
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      elevation: 0.0,
-      type: BottomNavigationBarType.fixed,
-      items: navItemMap.entries
-          .map((e) => BottomNavigationBarItem(icon: Icon(e.value), title: Text(e.key, style: TextStyle(fontSize: 12))))
-          .toList(),
-      currentIndex: _selectedIndex,
-      onTap: _onItemTapped,
+  Future<void> _onItemTapped(int index) async {
+    if (!_pageController.hasClients) return;
+    final page = _pageController.page;
+    if (page == index.toDouble()) return;
+    Feedback.forTap(context);
+    if (MediaQuery.of(context).disableAnimations) {
+      _pageController.jumpToPage(index);
+      return;
+    }
+    await _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
     );
+  }
+}
+
+class _KeptAlivePage extends StatefulWidget {
+  const _KeptAlivePage({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeptAlivePage> createState() => _KeptAlivePageState();
+}
+
+class _KeptAlivePageState extends State<_KeptAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
