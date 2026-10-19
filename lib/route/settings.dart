@@ -1,4 +1,5 @@
 import '../index.dart';
+import '../util/check_update.dart';
 
 class SettingsRoute extends StatelessWidget {
   const SettingsRoute({super.key});
@@ -23,6 +24,11 @@ class SettingsRoute extends StatelessWidget {
             onTap: () => navToPage(context, page_theme),
           ),
           const _SectionTitle('关于'),
+          ListTile(
+            leading: const Icon(Icons.system_update_outlined),
+            title: const Text('检查更新'),
+            onTap: () => checkUpdate(context),
+          ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('关于应用'),
@@ -89,25 +95,31 @@ class _AccountCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            getAvatarCircle(user?.avatar_url, radius: 28),
+            GestureDetector(
+              onTap: _openProfile(context),
+              child: getAvatarCircle(user?.avatar_url, radius: 28),
+            ),
             const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.name ?? user?.login ?? '未登录',
-                    style: textTheme.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user == null ? '登录后可同步关注动态' : (user?.login ?? ''),
-                    style: textTheme.bodySmall
-                        ?.copyWith(color: scheme.onSurfaceVariant),
-                  ),
-                ],
+              child: GestureDetector(
+                onTap: _openProfile(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.name ?? user?.login ?? '未登录',
+                      style: textTheme.titleMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user == null ? '登录后可同步关注动态' : (user?.login ?? ''),
+                      style: textTheme.bodySmall
+                          ?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
               ),
             ),
             if (user == null)
@@ -124,6 +136,12 @@ class _AccountCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  VoidCallback? _openProfile(BuildContext context) {
+    final url = user?.html_url;
+    if (url == null || url.isEmpty) return null;
+    return () => navToWeb(context: context, url: url);
   }
 
   Future<void> _logout(BuildContext context) async {

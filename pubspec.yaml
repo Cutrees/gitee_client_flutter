@@ -23,6 +23,9 @@ dependencies:
   html: ^0.15.7
   connectivity_plus: ^7.0.0
   json_annotation: ^4.9.0
+  package_info_plus: ^8.0.0
+  path_provider: ^2.1.4
+  open_filex: ^4.5.0
 
 dev_dependencies:
   flutter_test:

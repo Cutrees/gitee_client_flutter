@@ -19,6 +19,10 @@ const OAUTH_TOKEN_URL = 'https://gitee.com/oauth/token';
 const OAUTH_REDIRECT_URI = 'astra://callback';
 const OAUTH_SCOPE = 'user_info projects notes gists';
 
+const authorName = '铜树';
+const appReleaseUrl = 'https://gitee.com/cutree/gitee_client_flutter';
+const appTagsAtomUrl = 'https://gitee.com/cutree/gitee_client_flutter/tags.atom';
+
 const fontIconFontCN = 'iconFontCN';
 const String networkMobile = '当前处于移动网络';
 const String networkWifi = '当前处于WIFI网络';
