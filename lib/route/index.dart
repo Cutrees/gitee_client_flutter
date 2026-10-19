@@ -1,5 +1,6 @@
 export 'launch.dart';
 export 'login.dart';
+export 'oauth_login.dart';
 export 'nav_dynamic.dart';
 export 'main_route.dart';
 export 'theme.dart';

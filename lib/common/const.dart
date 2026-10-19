@@ -14,6 +14,11 @@ const CLIENT_SECRET = String.fromEnvironment(
       '0cff85e8decb0b93cd856952c85f41a1e8636040b7f4ffdea8788dbbe632421b',
 );
 
+const OAUTH_AUTHORIZE_URL = 'https://gitee.com/oauth/authorize';
+const OAUTH_TOKEN_URL = 'https://gitee.com/oauth/token';
+const OAUTH_REDIRECT_URI = 'giteeclient://callback';
+const OAUTH_SCOPE = 'user_info projects notes gists';
+
 const fontIconFontCN = 'iconFontCN';
 const fontMaterialIcons = 'MaterialIcons';
 const String networkMobile = '当前处于移动网络';

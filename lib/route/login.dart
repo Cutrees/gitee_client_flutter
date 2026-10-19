@@ -87,6 +87,22 @@ class _LoginRouteState extends State<LoginRoute> {
                       : Text(gm.login),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const OAuthLoginRoute(),
+                            ),
+                          ),
+                  icon: const Icon(Icons.open_in_browser),
+                  label: const Text('使用网页登录（可访问私有仓库）'),
+                ),
+              ),
             ],
           ),
         ),
