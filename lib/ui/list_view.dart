@@ -190,7 +190,7 @@ Widget listNoDataView(VoidCallback refresh, BuildContext context) {
               Padding(
                 padding: EdgeInsets.only(top: 0),
                 child: Text(
-                  "没有数据",
+                  "暂无数据",
                   style: TextStyle(
                     color: Theme.of(context).primaryColor,
                     fontSize: 18,

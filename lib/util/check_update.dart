@@ -39,18 +39,12 @@ Future<void> checkUpdate(BuildContext context) async {
     final String latestTag = await getLatestTag();
     if (!context.mounted) return;
     if (latestTag == 'v$currentVersion' || latestTag == currentVersion) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已是最新版')),
-      );
+      showToast('已是最新版');
     } else {
       _showUpdateDialog(context, latestTag);
     }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('检查更新失败：$e')),
-      );
-    }
+  } catch (_) {
+    showToast('无法获取更新信息，请稍后重试');
   }
 }
 
@@ -139,15 +133,11 @@ Future<void> downloadAndInstallApk(BuildContext context, String url) async {
     if (result.type != ResultType.done) {
       throw '打开安装包失败：${result.message}';
     }
-  } catch (e) {
+  } catch (_) {
     if (dialogShown && context.mounted && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('下载更新失败：$e')),
-      );
-    }
+    showToast('下载更新失败，请稍后重试');
   }
 }
 

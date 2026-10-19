@@ -185,3 +185,25 @@ Future<void> navToWeb({
     page: MaterialPageRoute<void>(builder: (context) => WebViewRoute(url: url)),
   );
 }
+
+Widget loginPrompt(BuildContext context) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.account_circle_outlined,
+          size: 64,
+          color: Theme.of(context).colorScheme.outline,
+        ),
+        const SizedBox(height: 16),
+        Text('登录后查看内容', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: () => navToPage(context, page_login),
+          child: const Text('登录'),
+        ),
+      ],
+    ),
+  );
+}

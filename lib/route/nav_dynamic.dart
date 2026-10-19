@@ -7,12 +7,7 @@ class DynamicRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<UserModel>();
     if (!user.isLogin) {
-      return Center(
-        child: ElevatedButton(
-          onPressed: () => navToPage(context, page_login),
-          child: Text(GmLocalizations.of(context).login),
-        ),
-      );
+      return loginPrompt(context);
     }
     return InfiniteListView<DynamicNews>(
       onRetrieveData: (page, items, refresh) async {

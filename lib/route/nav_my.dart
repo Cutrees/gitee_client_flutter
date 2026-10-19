@@ -31,12 +31,7 @@ class _MyRouteState extends State<MyRoute>
     final user = context.watch<UserModel>().user;
     if (user == null) {
       return Scaffold(
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () => navToPage(context, page_login),
-            child: Text(GmLocalizations.of(context).login),
-          ),
-        ),
+        body: loginPrompt(context),
       );
     }
     final avatar = user.avatar_url ?? user.portrait_url;

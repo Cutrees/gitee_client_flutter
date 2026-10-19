@@ -84,12 +84,7 @@ class _HomeRouteState extends State<HomeRoute>
                   .map((tab) => _HomeListWidget(tab))
                   .toList(),
             )
-          : Center(
-              child: ElevatedButton(
-                onPressed: () => navToPage(context, page_login),
-                child: Text(gm.login),
-              ),
-            ),
+          : loginPrompt(context),
     );
   }
 }
