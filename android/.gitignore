@@ -6,6 +6,8 @@ gradle-wrapper.jar
 /local.properties
 GeneratedPluginRegistrant.java
 /app/release
+/build
+/app/build
 *.iml
 
 # Remember to never publicly share your keystore.
