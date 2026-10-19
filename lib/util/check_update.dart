@@ -10,8 +10,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../index.dart';
 
-/// 用 Gitee 发行版 Atom 订阅获取最新 tag（普通网页接口，不受匿名 API 限流影响）。
-Future<String> getLatestTag() async {
+/// 用 Gitee 发行版 Atom 订阅获取最新 tag 与更新说明（普通网页接口，不受匿名 API 限流影响）。
+Future<({String tag, String note})> getLatestRelease() async {
   final response = await Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 10),
@@ -28,7 +28,15 @@ Future<String> getLatestTag() async {
   if (tag == null || tag.isEmpty) {
     throw '检查更新失败：无法解析最新版本信息';
   }
-  return tag;
+  return (tag: tag, note: _extractReleaseNote(firstEntry));
+}
+
+/// 从 Atom 的 `<content>` 里提取更新说明，并去掉可能存在的 HTML 标签。
+String _extractReleaseNote(dom.Element? entry) {
+  if (entry == null) return '';
+  final String? content = entry.querySelector('content')?.text;
+  if (content == null) return '';
+  return content.replaceAll(RegExp(r'<[^>]+>'), '').trim();
 }
 
 /// 检查更新：对比当前版本与最新 tag，有新版本则弹窗提示下载。
@@ -36,12 +44,12 @@ Future<void> checkUpdate(BuildContext context, {bool silent = false}) async {
   try {
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final String currentVersion = packageInfo.version;
-    final String latestTag = await getLatestTag();
+    final release = await getLatestRelease();
     if (!context.mounted) return;
-    if (latestTag == 'v$currentVersion' || latestTag == currentVersion) {
+    if (release.tag == 'v$currentVersion' || release.tag == currentVersion) {
       if (!silent) showToast('已是最新版');
     } else {
-      _showUpdateDialog(context, latestTag);
+      _showUpdateDialog(context, release.tag, release.note);
     }
   } catch (_) {
     if (!silent) showToast('无法获取更新信息，请稍后重试');
@@ -63,7 +71,11 @@ Future<void> autoCheckUpdate() async {
   await checkUpdate(context, silent: true);
 }
 
-void _showUpdateDialog(BuildContext context, String latestTag) {
+void _showUpdateDialog(
+  BuildContext context,
+  String latestTag,
+  String releaseNote,
+) {
   final String abi = Abi.current().architectureName;
   final String downloadUrl =
       '$appReleaseUrl/releases/download/$latestTag/app-$abi-release.apk';
@@ -71,7 +83,24 @@ void _showUpdateDialog(BuildContext context, String latestTag) {
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text('发现新版本'),
-      content: Text('最新版本：$latestTag'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('最新版本：$latestTag'),
+            if (releaseNote.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                '更新日志',
+                style: Theme.of(dialogContext).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              Text(releaseNote),
+            ],
+          ],
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext),
