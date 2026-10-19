@@ -7,8 +7,7 @@ class ThemeChangeRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeModel = context.watch<ThemeModel>();
     final scheme = Theme.of(context).colorScheme;
-    const brandColor = Color(0xFF009688);
-    final colors = [brandColor, ...Global.themes];
+    final colors = Global.themes;
 
     return Scaffold(
       appBar: AppBar(title: const Text('主题')),
@@ -18,7 +17,7 @@ class ThemeChangeRoute extends StatelessWidget {
           Text('主题颜色', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 6),
           Text(
-            '选择 Gitee 品牌红或预设颜色，立即应用到应用界面。',
+            '选择主题颜色。',
             style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: scheme.onSurfaceVariant),
           ),
@@ -31,18 +30,6 @@ class ThemeChangeRoute extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Card(
-            margin: EdgeInsets.zero,
-            child: ListTile(
-              leading: Icon(Icons.brightness_6_outlined, color: scheme.primary),
-              title: const Text('明暗模式'),
-              subtitle: const Text('跟随系统设置，自动适配浅色与深色界面'),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 6,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -139,7 +126,6 @@ class _ThemePreviewCard extends StatelessWidget {
 
   String _colorName(Color value) {
     const names = <int, String>{
-      0xffc71d23: 'Gitee 品牌红',
       0xff2196f3: '蓝色',
       0xff00bcd4: '青色',
       0xff009688: '蓝绿色',
