@@ -20,6 +20,8 @@ const OAUTH_REDIRECT_URI = 'astra://callback';
 const OAUTH_SCOPE = 'user_info projects notes gists';
 
 const authorName = '铜树';
+const authorMail = '3318793702@qq.com';
+const appDeveloperProfileUrl = 'https://gitee.com/cutree';
 const appReleaseUrl = 'https://gitee.com/cutree/gitee_client_flutter';
 const appTagsAtomUrl = 'https://gitee.com/cutree/gitee_client_flutter/tags.atom';
 
