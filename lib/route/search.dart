@@ -309,7 +309,7 @@ class _SearchResultListState<T> extends State<_SearchResultList<T>>
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    const Text('没有搜索结果'),
+                    const Text('暂无搜索结果'),
                     TextButton(
                       onPressed: () => _load(refresh: true),
                       child: const Text('刷新'),
