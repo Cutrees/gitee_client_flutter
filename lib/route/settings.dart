@@ -22,14 +22,6 @@ class SettingsRoute extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => navToPage(context, page_theme),
           ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          ListTile(
-            leading: const Icon(Icons.language_outlined),
-            title: Text(gm.language),
-            subtitle: const Text('切换应用语言'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => navToPage(context, page_language),
-          ),
           const _SectionTitle('关于'),
           ListTile(
             leading: const Icon(Icons.info_outline),

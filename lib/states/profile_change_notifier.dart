@@ -38,21 +38,3 @@ class ThemeModel extends ProfileChangeNotifier {
     }
   }
 }
-
-class LocaleModel extends ProfileChangeNotifier {
-  Locale? getLocale() {
-    final locale = _profile.locale;
-    if (locale == null) return null;
-    final parts = locale.split('_');
-    return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
-  }
-
-  String? get locale => _profile.locale;
-
-  set locale(String? locale) {
-    if (locale != _profile.locale) {
-      _profile.locale = locale;
-      notifyListeners();
-    }
-  }
-}

@@ -12,11 +12,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<ThemeModel>(create: (_) => ThemeModel()),
-        ChangeNotifierProvider<LocaleModel>(create: (_) => LocaleModel()),
         ChangeNotifierProvider<UserModel>(create: (_) => UserModel()),
       ],
-      child: Consumer2<ThemeModel, LocaleModel>(
-        builder: (context, themeModel, localeModel, child) {
+      child: Consumer<ThemeModel>(
+        builder: (context, themeModel, child) {
           final seedColor = themeModel.seedColor;
           return MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -39,7 +38,6 @@ class MyApp extends StatelessWidget {
             themeMode: ThemeMode.system,
             onGenerateTitle: (context) => GmLocalizations.of(context).title,
             home: LaunchWidget(),
-            locale: localeModel.getLocale(),
             supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
@@ -47,8 +45,6 @@ class MyApp extends StatelessWidget {
               GmLocalizationsDelegate(),
             ],
             localeResolutionCallback: (locale, supportedLocales) {
-              final configuredLocale = localeModel.getLocale();
-              if (configuredLocale != null) return configuredLocale;
               return supportedLocales.contains(locale)
                   ? locale
                   : const Locale('zh', 'CN');
