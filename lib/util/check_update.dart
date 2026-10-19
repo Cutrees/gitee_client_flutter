@@ -39,6 +39,26 @@ String _extractReleaseNote(dom.Element? entry) {
   return content.replaceAll(RegExp(r'<[^>]+>'), '').trim();
 }
 
+/// 比较两个版本号，忽略前导 v/V 前缀，按数字逐段比较。
+/// 返回 >0 表示 a 更新，<0 表示 b 更新，==0 表示相同。
+int _compareVersions(String a, String b) {
+  final listA = _parseVersion(a);
+  final listB = _parseVersion(b);
+  final length = listA.length > listB.length ? listA.length : listB.length;
+  for (int i = 0; i < length; i++) {
+    final partA = i < listA.length ? listA[i] : 0;
+    final partB = i < listB.length ? listB[i] : 0;
+    if (partA != partB) return partA > partB ? 1 : -1;
+  }
+  return 0;
+}
+
+List<int> _parseVersion(String version) {
+  var v = version.trim();
+  if (v.startsWith('v') || v.startsWith('V')) v = v.substring(1);
+  return v.split('.').map((part) => int.tryParse(part) ?? 0).toList();
+}
+
 /// 检查更新：对比当前版本与最新 tag，有新版本则弹窗提示下载。
 Future<void> checkUpdate(BuildContext context, {bool silent = false}) async {
   try {
@@ -46,7 +66,8 @@ Future<void> checkUpdate(BuildContext context, {bool silent = false}) async {
     final String currentVersion = packageInfo.version;
     final release = await getLatestRelease();
     if (!context.mounted) return;
-    if (release.tag == 'v$currentVersion' || release.tag == currentVersion) {
+    // 只有远端 tag 真正比当前版本新时才提示更新，避免旧 tag 被误判为新版。
+    if (_compareVersions(release.tag, currentVersion) <= 0) {
       if (!silent) showToast('已是最新版');
     } else {
       _showUpdateDialog(context, release.tag, release.note);
