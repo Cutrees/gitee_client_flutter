@@ -6,28 +6,26 @@ class DynamicRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserModel>();
-    return Scaffold(
-      appBar: AppBar(title: Text(GmLocalizations.of(context).navDynamic)),
-      body: !user.isLogin
-          ? Center(
-              child: ElevatedButton(
-                onPressed: () => navToPage(context, page_login),
-                child: Text(GmLocalizations.of(context).login),
-              ),
-            )
-          : InfiniteListView<DynamicNews>(
-              onRetrieveData: (page, items, refresh) async {
-                final data = await GiteeApi().receivedEvents(
-                  queryParameters: {'page': page, 'per_page': 20},
-                  refresh: refresh,
-                );
-                items.addAll(data);
-                return data.length == 20;
-              },
-              emptyBuilder: listNoDataView,
-              itemBuilder: (list, index, context) =>
-                  _DynamicNewsItemWidget(list[index]),
-            ),
+    if (!user.isLogin) {
+      return Center(
+        child: ElevatedButton(
+          onPressed: () => navToPage(context, page_login),
+          child: Text(GmLocalizations.of(context).login),
+        ),
+      );
+    }
+    return InfiniteListView<DynamicNews>(
+      onRetrieveData: (page, items, refresh) async {
+        final data = await GiteeApi().receivedEvents(
+          queryParameters: {'page': page, 'per_page': 20},
+          refresh: refresh,
+        );
+        items.addAll(data);
+        return data.length == 20;
+      },
+      emptyBuilder: listNoDataView,
+      itemBuilder: (list, index, context) =>
+          _DynamicNewsItemWidget(list[index]),
     );
   }
 }

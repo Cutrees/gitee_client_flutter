@@ -15,7 +15,7 @@ class _PersonDetailState extends State<MyRoute>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -102,6 +102,7 @@ class _PersonDetailState extends State<MyRoute>
                 child: TabBar(
                   controller: _tabController,
                   tabs: const [
+                    Tab(text: '动态'),
                     Tab(text: '仓库'),
                     Tab(text: '星标'),
                   ],
@@ -113,6 +114,7 @@ class _PersonDetailState extends State<MyRoute>
         body: TabBarView(
           controller: _tabController,
           children: [
+            DynamicRoute(),
             RepoListWidget(0, key: ValueKey('${user.id}-repos')),
             RepoListWidget(1, key: ValueKey('${user.id}-stars')),
           ],

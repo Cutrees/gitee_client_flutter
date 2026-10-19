@@ -24,7 +24,7 @@ class _MainRouteState extends State<MainRoute> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _pageList = [HomeRoute(), DynamicRoute(), MyRoute()];
+    _pageList = [HomeRoute(), MyRoute(), SettingsRoute()];
     _subscription = Connectivity().onConnectivityChanged.listen((results) {
       if (!mounted) return;
       if (results.contains(ConnectivityResult.wifi)) {
@@ -51,8 +51,8 @@ class _MainRouteState extends State<MainRoute> {
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final navItems = [
       (gm.navHome, Icons.home_outlined, Icons.home),
-      (gm.navDynamic, Icons.explore_outlined, Icons.explore),
       (gm.navMe, Icons.person_outline, Icons.person),
+      ('设置', Icons.settings_outlined, Icons.settings),
     ];
 
     return Scaffold(

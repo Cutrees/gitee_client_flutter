@@ -9,3 +9,4 @@ export 'nav_home.dart';
 export 'search.dart';
 export 'notifications.dart';
 export 'nav_my.dart';
+export 'settings.dart';
