@@ -2,7 +2,15 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'index.dart';
 
-void main() => Global.init().then((_) => runApp(const MyApp()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Global.init();
+  } catch (_) {
+    // 初始化失败也不阻塞启动，确保进入应用，避免卡在原生启动画面。
+  }
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
