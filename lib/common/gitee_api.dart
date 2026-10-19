@@ -35,7 +35,7 @@ class GiteeApi {
       Options(extra: {'refresh': refresh, 'list': true, 'noCache': noCache});
 
   List<T> _list<T>(dynamic data, T Function(Map<String, dynamic>) decode) {
-    final dynamic items = data is Map ? data['list'] : data;
+    final dynamic items = _extractList(data);
     if (items is! List) throw const FormatException('Expected a list response');
     final result = <T>[];
     for (final item in items) {
@@ -47,6 +47,19 @@ class GiteeApi {
       }
     }
     return result;
+  }
+
+  /// 兼容 Gitee 列表接口返回「纯数组」或「包裹对象」两种格式。
+  dynamic _extractList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map) {
+      return data['list'] ??
+          data['data'] ??
+          data['items'] ??
+          data['records'] ??
+          data['result'];
+    }
+    return null;
   }
 
   Future<void> login(String account, String password) async {
@@ -61,6 +74,7 @@ class GiteeApi {
         'password': password,
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
+        'scope': 'user_info projects notes gists',
       }),
       options: _options(noCache: true),
     );
@@ -76,6 +90,7 @@ class GiteeApi {
         'refresh_token': refreshToken,
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
+        'scope': 'user_info projects notes gists',
       },
       options: _options(noCache: true),
     );
