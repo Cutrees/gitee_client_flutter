@@ -1,6 +1,6 @@
 # 码云 Gitee 客户端
 
-基于 [gitee_client_flutter](https://github.com/javakam/gitee_client_flutter) 改造的 Gitee 安卓客户端。
+基于 [gitee_client_flutter](https://github.com/javakam/gitee_client_flutter) 改造的 Gitee 安卓客户端（原项目未声明开源许可）。
 
 开发者：铜树
 
