@@ -182,7 +182,6 @@ class GiteeApi {
       queryParameters: _query({
         'per_page': perPage,
         'page': page,
-        'direction': 'asc',
       }),
       options: _options(noCache: true),
     );
