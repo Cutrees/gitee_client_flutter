@@ -2,6 +2,10 @@
 
 part of 'issue.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Issue _$IssueFromJson(Map<String, dynamic> json) => Issue()
   ..id = json['id'] as num?
   ..url = json['url'] as String?

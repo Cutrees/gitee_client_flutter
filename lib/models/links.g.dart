@@ -2,6 +2,10 @@
 
 part of 'links.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Links _$LinksFromJson(Map<String, dynamic> json) => Links()
   ..self = json['self'] as Map<String, dynamic>?
   ..html = json['html'] as Map<String, dynamic>?

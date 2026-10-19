@@ -2,6 +2,10 @@
 
 part of 'pullRequest.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 PullRequest _$PullRequestFromJson(Map<String, dynamic> json) => PullRequest()
   ..id = json['id'] as num?
   ..url = json['url'] as String?
@@ -22,7 +26,7 @@ PullRequest _$PullRequestFromJson(Map<String, dynamic> json) => PullRequest()
   ..testers_number = json['testers_number'] as num?
   ..assignees = json['assignees'] as List<dynamic>?
   ..testers = json['testers'] as List<dynamic>?
-  ..milestone = json['milestone'] as String?
+  ..milestone = json['milestone'] as Map<String, dynamic>?
   ..labels = json['labels'] as List<dynamic>?
   ..locked = json['locked'] as bool?
   ..created_at = json['created_at'] as String?

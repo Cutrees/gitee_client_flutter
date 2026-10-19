@@ -2,6 +2,10 @@
 
 part of 'repoV3.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 RepoV3 _$RepoV3FromJson(Map<String, dynamic> json) => RepoV3()
   ..id = json['id'] as num?
   ..name = json['name'] as String?

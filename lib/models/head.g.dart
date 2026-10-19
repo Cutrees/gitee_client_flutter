@@ -2,6 +2,10 @@
 
 part of 'head.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Head _$HeadFromJson(Map<String, dynamic> json) => Head()
   ..label = json['label'] as String?
   ..ref = json['ref'] as String?

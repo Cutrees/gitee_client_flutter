@@ -2,6 +2,10 @@
 
 part of 'dynamicNews.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 DynamicNews _$DynamicNewsFromJson(Map<String, dynamic> json) => DynamicNews()
   ..id = json['id'] as num?
   ..type = json['type'] as String?

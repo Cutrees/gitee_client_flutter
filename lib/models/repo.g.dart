@@ -2,6 +2,10 @@
 
 part of 'repo.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Repo _$RepoFromJson(Map<String, dynamic> json) => Repo()
   ..id = json['id'] as num?
   ..full_name = json['full_name'] as String?

@@ -2,6 +2,10 @@
 
 part of 'commit.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Commit _$CommitFromJson(Map<String, dynamic> json) => Commit()
   ..sha = json['sha'] as String?
   ..author = json['author'] == null

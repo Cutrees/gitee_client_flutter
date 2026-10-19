@@ -2,6 +2,10 @@
 
 part of 'comment.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Comment _$CommentFromJson(Map<String, dynamic> json) => Comment()
   ..url = json['url'] as String?
   ..html_url = json['html_url'] as String?

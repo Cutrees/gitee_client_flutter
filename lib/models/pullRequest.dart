@@ -29,7 +29,7 @@ class PullRequest {
   num? testers_number;
   List<dynamic>? assignees;
   List<dynamic>? testers;
-  String? milestone;
+  Map<String, dynamic>? milestone;
   List<dynamic>? labels;
   bool? locked;
   String? created_at;

@@ -2,6 +2,10 @@
 
 part of 'namespaceV3.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 NamespaceV3 _$NamespaceV3FromJson(Map<String, dynamic> json) => NamespaceV3()
   ..id = json['id'] as num?
   ..name = json['name'] as String?

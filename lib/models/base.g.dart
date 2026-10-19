@@ -2,6 +2,10 @@
 
 part of 'base.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Base _$BaseFromJson(Map<String, dynamic> json) => Base()
   ..label = json['label'] as String?
   ..ref = json['ref'] as String?

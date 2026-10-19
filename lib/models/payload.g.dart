@@ -2,6 +2,10 @@
 
 part of 'payload.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Payload _$PayloadFromJson(Map<String, dynamic> json) => Payload()
   ..action = json['action'] as String?
   ..id = json['id'] as num?
@@ -23,7 +27,7 @@ Payload _$PayloadFromJson(Map<String, dynamic> json) => Payload()
   ..testers_number = json['testers_number'] as num?
   ..assignees = json['assignees'] as List<dynamic>?
   ..testers = json['testers'] as List<dynamic>?
-  ..milestone = json['milestone'] as String?
+  ..milestone = json['milestone'] as Map<String, dynamic>?
   ..labels = json['labels'] as List<dynamic>?
   ..locked = json['locked'] as bool?
   ..created_at = json['created_at'] as String?

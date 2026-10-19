@@ -2,6 +2,10 @@
 
 part of 'profile.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Profile _$ProfileFromJson(Map<String, dynamic> json) => Profile()
   ..user = json['user'] == null
       ? null

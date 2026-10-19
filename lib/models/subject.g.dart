@@ -2,6 +2,10 @@
 
 part of 'subject.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Subject _$SubjectFromJson(Map<String, dynamic> json) => Subject()
   ..title = json['title'] as String?
   ..url = json['url'] as String?

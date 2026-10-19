@@ -2,6 +2,10 @@
 
 part of 'user.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 User _$UserFromJson(Map<String, dynamic> json) => User()
   ..id = json['id'] as num?
   ..login = json['login'] as String?

@@ -2,6 +2,10 @@
 
 part of 'oauth.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Oauth _$OauthFromJson(Map<String, dynamic> json) => Oauth()
   ..access_token = json['access_token'] as String?
   ..token_type = json['token_type'] as String?

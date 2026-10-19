@@ -2,6 +2,10 @@
 
 part of 'notifications.dart';
 
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
 Notifications _$NotificationsFromJson(Map<String, dynamic> json) =>
     Notifications()
       ..id = json['id'] as num?
