@@ -87,7 +87,7 @@ class _MainRouteState extends State<MainRoute> {
                 } else {
                   _pageController.animateToPage(
                     index,
-                    duration: const Duration(milliseconds: 280),
+                    duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
                   );
                 }
@@ -137,7 +137,7 @@ class _MainRouteState extends State<MainRoute> {
     }
     await _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
     );
   }

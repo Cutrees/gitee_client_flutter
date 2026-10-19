@@ -17,6 +17,15 @@ class _LaunchState extends State<LaunchWidget> {
   Future<void> _prepare() async {
     try {
       await OAuth().prepare();
+      if (OAuth().isAuthorized) {
+        try {
+          final user = await GiteeApi().userInfo();
+          Global.profile.user = user;
+          await Global.saveProfile();
+        } catch (_) {
+          // 刷新用户资料失败时保留本地缓存，不阻塞启动。
+        }
+      }
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(page_main);
     } catch (_) {
