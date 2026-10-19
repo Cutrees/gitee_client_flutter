@@ -17,6 +17,7 @@ class _MainRouteState extends State<MainRoute> {
   late final List<Widget> _pageList;
   StreamSubscription<List<ConnectivityResult>>? _subscription;
   int _selectedIndex = 0;
+  int? _dragTarget;
   DateTime? _lastPressedAt;
 
   @override
@@ -70,19 +71,38 @@ class _MainRouteState extends State<MainRoute> {
           itemBuilder: (_, index) => _KeptAlivePage(child: _pageList[index]),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        animationDuration: reduceMotion ? Duration.zero : null,
-        onDestinationSelected: _onItemTapped,
-        destinations: navItems
-            .map(
-              (item) => NavigationDestination(
-                icon: Icon(item.$2),
-                selectedIcon: Icon(item.$3),
-                label: item.$1,
-              ),
-            )
-            .toList(),
+      bottomNavigationBar: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / _pageList.length;
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: (details) {
+              final index = (details.localPosition.dx / itemWidth)
+                  .floor()
+                  .clamp(0, _pageList.length - 1);
+              if (index != _selectedIndex && index != _dragTarget) {
+                _dragTarget = index;
+                _pageController.jumpToPage(index);
+              }
+            },
+            onHorizontalDragEnd: (_) => _dragTarget = null,
+            onHorizontalDragCancel: () => _dragTarget = null,
+            child: NavigationBar(
+              selectedIndex: _selectedIndex,
+              animationDuration: reduceMotion ? Duration.zero : null,
+              onDestinationSelected: _onItemTapped,
+              destinations: navItems
+                  .map(
+                    (item) => NavigationDestination(
+                      icon: Icon(item.$2),
+                      selectedIcon: Icon(item.$3),
+                      label: item.$1,
+                    ),
+                  )
+                  .toList(),
+            ),
+          );
+        },
       ),
     );
   }

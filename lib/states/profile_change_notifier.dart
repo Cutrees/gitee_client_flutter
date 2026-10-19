@@ -16,11 +16,10 @@ class UserModel extends ProfileChangeNotifier {
   bool get isLogin => user != null;
 
   set user(User? user) {
-    if (user?.id != _profile.user?.id) {
-      _profile.lastLogin = user?.login ?? _profile.user?.login;
-      _profile.user = user;
-      notifyListeners();
-    }
+    if (user == null && _profile.user == null) return;
+    _profile.lastLogin = user?.login ?? _profile.user?.login;
+    _profile.user = user;
+    notifyListeners();
   }
 }
 
