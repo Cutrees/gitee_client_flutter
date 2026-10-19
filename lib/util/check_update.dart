@@ -33,9 +33,9 @@ Future<String> getLatestTag() async {
 
 /// 检查更新：对比当前版本与最新 tag，有新版本则弹窗提示下载。
 Future<void> checkUpdate(BuildContext context) async {
-  final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-  final String currentVersion = packageInfo.version;
   try {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final String currentVersion = packageInfo.version;
     final String latestTag = await getLatestTag();
     if (!context.mounted) return;
     if (latestTag == 'v$currentVersion' || latestTag == currentVersion) {
@@ -139,11 +139,15 @@ Future<void> downloadAndInstallApk(BuildContext context, String url) async {
     if (result.type != ResultType.done) {
       throw '打开安装包失败：${result.message}';
     }
-  } catch (_) {
+  } catch (e) {
     if (dialogShown && context.mounted && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
-    rethrow;
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('下载更新失败：$e')),
+      );
+    }
   }
 }
 
