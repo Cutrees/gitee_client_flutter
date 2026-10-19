@@ -7,7 +7,6 @@ export 'package:webview_flutter/webview_flutter.dart';
 export 'package:connectivity_plus/connectivity_plus.dart';
 export 'l10n/localization_intl.dart';
 export 'common/index.dart';
-export 'event/event_bus.dart';
 export 'models/index.dart';
 export 'states/index.dart';
 export 'route/index.dart';

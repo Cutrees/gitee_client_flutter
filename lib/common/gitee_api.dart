@@ -20,8 +20,6 @@ class GiteeApi {
   }
 
   String _encodeSegment(String? value) => Uri.encodeComponent(value ?? '');
-  String _encodeContentsPath(String path) =>
-      path.split('/').map(_encodeSegment).join('/');
 
   Map<String, dynamic> _query(
     Map<String, dynamic>? query, {
@@ -252,106 +250,5 @@ class GiteeApi {
       options: _options(refresh: refresh),
     );
     return _list(response.data, User.fromJson);
-  }
-
-  Future<List<RepoV3>> searchReposV3({
-    required String keyWords,
-    Map<String, dynamic>? queryParameters,
-    bool refresh = false,
-  }) async {
-    final response = await dioV3.get(
-      'projects/search/${_encodeSegment(keyWords)}',
-      queryParameters: {'per_page': perPage, ...?queryParameters},
-      options: _options(refresh: refresh),
-    );
-    return _list(response.data, RepoV3.fromJson);
-  }
-
-  Future<dynamic> issues(int page) async {
-    if (!OAuth().isAuthorized) return null;
-    final response = await dioV5.get(
-      'api/v5/issues',
-      queryParameters: _query({
-        'per_page': perPage,
-        'page': page,
-        'sort': 'updated',
-        'filter': 'all',
-        'state': 'all',
-      }),
-    );
-    return response.data;
-  }
-
-  String _repoPath(String owner, String repo) =>
-      '${_encodeSegment(owner)}/${_encodeSegment(repo)}';
-
-  Future<dynamic> readme(String owner, String repo) async {
-    final response = await dioV5.get(
-      'api/v5/repos/${_repoPath(owner, repo)}/readme',
-      queryParameters: _query(null),
-    );
-    return response.data;
-  }
-
-  Future<dynamic> reposContents(
-    String owner,
-    String repo, {
-    String path = '',
-    String? ref,
-  }) async {
-    final response = await dioV5.get(
-      'api/v5/repos/${_repoPath(owner, repo)}/contents/${_encodeContentsPath(path)}',
-      queryParameters: _query({if (ref != null) 'ref': ref}),
-    );
-    return response.data;
-  }
-
-  Future<dynamic> updateProfile(Map<String, dynamic> data) async {
-    final response = await dioV5.patch(
-      'api/v5/user',
-      queryParameters: _query(data),
-    );
-    Global.netCache.cache.clear();
-    return response.data;
-  }
-
-  Future<dynamic> _relationship(
-    String owner,
-    String repo,
-    String kind,
-    String method,
-  ) async {
-    final response = await dioV5.request(
-      'api/v5/user/$kind/${_repoPath(owner, repo)}',
-      queryParameters: _query(null),
-      options: Options(method: method),
-    );
-    Global.netCache.cache.clear();
-    return response.data;
-  }
-
-  Future<dynamic> star(String owner, String repo) =>
-      _relationship(owner, repo, 'starred', 'PUT');
-  Future<dynamic> unstar(String owner, String repo) =>
-      _relationship(owner, repo, 'starred', 'DELETE');
-  Future<dynamic> watch(String owner, String repo) =>
-      _relationship(owner, repo, 'subscriptions', 'PUT');
-  Future<dynamic> unwatch(String owner, String repo) =>
-      _relationship(owner, repo, 'subscriptions', 'DELETE');
-
-  Future<dynamic> starUsers(String owner, String repo, [int page = 1]) async {
-    final response = await dioV5.get(
-      'api/v5/repos/${_repoPath(owner, repo)}/stargazers',
-      queryParameters: _query({'per_page': perPage, 'page': page}),
-    );
-    return response.data;
-  }
-
-  Future<dynamic> watchUsers(String owner, String repo, [int page = 1]) async {
-    final response = await dioV5.get(
-      'api/v5/repos/${_repoPath(owner, repo)}/subscribers',
-      queryParameters: _query({'per_page': perPage, 'page': page}),
-    );
-    return response.data;
   }
 }
