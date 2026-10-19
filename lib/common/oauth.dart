@@ -48,7 +48,7 @@ class OAuth {
     oauth.created_at = time;
     await prefs.setInt('expires_in', oauth.expires_in?.toInt() ?? 0);
     await prefs.setString('access_token', accessToken);
-    await prefs.setString('refresh_token', oauth.refresh_token ?? '');
+    await prefs.setString('refresh_token', oauth.refresh_token ?? _oauth?.refresh_token ?? '');
     await prefs.setString('scope', oauth.scope ?? '');
     await prefs.setInt('created_at', time);
     _oauth = oauth;
@@ -87,9 +87,11 @@ class OAuth {
 
   bool get isExpired {
     final createdAt = _createdAt;
+    final expiresIn = (_oauth?.expires_in ?? 0).toInt();
     if (createdAt == null || !isAuthorized) return true;
+    if (expiresIn <= 0) return false;
     return !createdAt
-        .add(Duration(seconds: (_oauth?.expires_in ?? 0).toInt()))
+        .add(Duration(seconds: expiresIn))
         .isAfter(DateTime.now());
   }
 
