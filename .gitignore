@@ -42,3 +42,29 @@ app.*.map.json
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+# 本地工具缓存、测试输出与临时文件
+/coverage/
+/test-results/
+**/__pycache__/
+*.tmp
+*.bak
+
+# 平台工具自动生成的临时目录
+/ios/Flutter/ephemeral/
+/android/.kotlin/
+/android/app/debug/
+/android/app/profile/
+
+# 本地安装包与签名资料（已跟踪的历史文件不受影响）
+*.apk
+*.aab
+*.jks
+*.keystore
+*.jks.old
+
+# 本地凭据配置；保留可提交的示例模板
+.env
+.env.*
+!.env.example
+!.env.sample
