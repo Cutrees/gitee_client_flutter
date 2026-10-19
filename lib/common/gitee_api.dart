@@ -8,8 +8,22 @@ class GiteeApi {
   GiteeApi._internal();
 
   static const int perPage = 20;
-  static final Dio dioV3 = Dio(BaseOptions(baseUrl: BASE_URL_V3));
-  static final Dio dioV5 = Dio(BaseOptions(baseUrl: BASE_URL));
+  static final Dio dioV3 = Dio(
+    BaseOptions(
+      baseUrl: BASE_URL_V3,
+      connectTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 20),
+    ),
+  );
+  static final Dio dioV5 = Dio(
+    BaseOptions(
+      baseUrl: BASE_URL,
+      connectTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 20),
+    ),
+  );
 
   static void init() {
     for (final dio in [dioV3, dioV5]) {
