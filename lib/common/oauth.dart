@@ -108,5 +108,8 @@ class OAuth {
     _createdAt = DateTime.fromMillisecondsSinceEpoch(time * 1000);
   }
 
-  Future<void> logout() => resetToken();
+  Future<void> logout() async {
+    await resetToken();
+    await WebViewCookieManager().clearCookies();
+  }
 }

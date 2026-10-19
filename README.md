@@ -9,6 +9,13 @@
 ## 安装包(Apk)
 **码云客户端**[Gitee Flutter Client Apk](https://github.com/javakam/gitee_client_flutter/blob/master/apk/gitee_client_flutter.apk?raw=true)
 
+## 安卓端使用说明
+
+- 应用 OAuth 授权与 Gitee 网页 Cookie 会话独立。内置网页右上角提供“网页登录”入口，在官方网页完成一次登录后，由 Android WebView 保留会话；“返回原页面”可回到打开的仓库。当前未实现 OAuth 到网页会话的自动换取。
+- 退出应用账号时同时清除内置网页 Cookie，避免留下上一个账号的网页登录状态。
+- 探索页下拉刷新从上次已加载批次之后获取新一批，并继续顺序分页；接口返回空批次后回到开头。服务端数据量有限时仍可能再次看到已有仓库。
+- 开发期间不主动构建 APK，仅在明确要求打包时构建；日常使用静态分析与针对性测试验证改动。
+
 ## 项目结构
 ```
 ├─common    常量,常用方法,网络及缓存,全局配置,oauth认证
