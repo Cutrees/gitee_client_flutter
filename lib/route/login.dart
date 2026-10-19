@@ -109,7 +109,12 @@ class _LoginRouteState extends State<LoginRoute> {
       }
       await GiteeApi().login(account, password);
       final user = await GiteeApi().userInfo();
-      model.user = user;
+      try {
+        final detail = await GiteeApi().userDetail(user.login ?? account);
+        model.user = detail;
+      } catch (_) {
+        model.user = user;
+      }
       if (mounted) Navigator.of(context).pop();
     } on DioException {
       if (OAuth().isAuthorized) await OAuth().resetToken();

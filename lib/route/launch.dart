@@ -20,7 +20,12 @@ class _LaunchState extends State<LaunchWidget> {
       if (OAuth().isAuthorized) {
         try {
           final user = await GiteeApi().userInfo();
-          Global.profile.user = user;
+          try {
+            final detail = await GiteeApi().userDetail(user.login ?? '');
+            Global.profile.user = detail;
+          } catch (_) {
+            Global.profile.user = user;
+          }
           await Global.saveProfile();
         } catch (_) {
           // 刷新用户资料失败时保留本地缓存，不阻塞启动。

@@ -106,6 +106,16 @@ class GiteeApi {
     return User.fromJson(response.data!);
   }
 
+  /// 用公开接口获取完整用户资料（邮箱/主页等字段，/user 接口可能因 scope 返回不完整）。
+  Future<User> userDetail(String login) async {
+    final response = await dioV5.get<Map<String, dynamic>>(
+      'api/v5/users/${_encodeSegment(login)}',
+      queryParameters: _query(null),
+      options: _options(noCache: true),
+    );
+    return User.fromJson(response.data!);
+  }
+
   Future<List<DynamicNews>> receivedEvents({
     Map<String, dynamic>? queryParameters,
     bool refresh = false,
