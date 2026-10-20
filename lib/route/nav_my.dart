@@ -70,7 +70,7 @@ class _MyRouteState extends State<MyRoute>
                                 context: context,
                                 page: UserFollowRoute(
                                   login: user.login ?? '',
-                                  initialIndex: 1,
+                                  initialIndex: 0,
                                 ),
                               ),
                             ),
@@ -82,7 +82,7 @@ class _MyRouteState extends State<MyRoute>
                                 context: context,
                                 page: UserFollowRoute(
                                   login: user.login ?? '',
-                                  initialIndex: 0,
+                                  initialIndex: 1,
                                 ),
                               ),
                             ),

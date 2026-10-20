@@ -42,14 +42,14 @@ class _UserFollowRouteState extends State<UserFollowRoute>
         title: Text(widget.login),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: '粉丝'), Tab(text: '关注')],
+          tabs: const [Tab(text: '关注'), Tab(text: '粉丝')],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _UserFollowList(login: widget.login, following: false),
           _UserFollowList(login: widget.login, following: true),
+          _UserFollowList(login: widget.login, following: false),
         ],
       ),
     );
