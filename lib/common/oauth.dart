@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../index.dart';
 
@@ -12,25 +14,40 @@ class OAuth {
   OAuth._internal();
   factory OAuth() => _shared;
 
+  static const _secureStorage = FlutterSecureStorage();
+  static const _tokenKey = 'oauth_token';
+
   Oauth? _oauth;
   DateTime? _createdAt;
 
   String? token() => _oauth?.access_token ?? Global.profile.oauth?.access_token;
 
   Future<OAuth> prepare() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accessToken = prefs.getString('access_token');
-    if (accessToken != null && accessToken.isNotEmpty) {
-      _oauth = Oauth()
-        ..access_token = accessToken
-        ..expires_in = prefs.getInt('expires_in') ?? 0
-        ..refresh_token = prefs.getString('refresh_token')
-        ..scope = prefs.getString('scope')
-        ..created_at = prefs.getInt('created_at') ?? 0;
-      Global.profile.oauth = _oauth;
-    } else {
-      _oauth = Global.profile.oauth;
+    // 优先从安全存储读取 token，保证跨重启持久化。
+    try {
+      final tokenJson = await _secureStorage.read(key: _tokenKey);
+      if (tokenJson != null && tokenJson.isNotEmpty) {
+        _oauth = Oauth.fromJson(jsonDecode(tokenJson) as Map<String, dynamic>);
+      }
+    } catch (_) {
+      // 安全存储读取失败时回退到 SharedPreferences。
     }
+    if (_oauth == null) {
+      // 兼容旧数据：从 SharedPreferences 读取。
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+      if (accessToken != null && accessToken.isNotEmpty) {
+        _oauth = Oauth()
+          ..access_token = accessToken
+          ..expires_in = prefs.getInt('expires_in') ?? 0
+          ..refresh_token = prefs.getString('refresh_token')
+          ..scope = prefs.getString('scope')
+          ..created_at = prefs.getInt('created_at') ?? 0;
+      } else {
+        _oauth = Global.profile.oauth;
+      }
+    }
+    if (_oauth != null) Global.profile.oauth = _oauth;
     if (isAuthorized) {
       _resetCreatedAt(_oauth?.created_at?.toInt() ?? 0);
       if (isExpired) {
@@ -49,16 +66,15 @@ class OAuth {
     if (accessToken == null || accessToken.isEmpty) {
       throw const FormatException('Missing access token');
     }
-    final prefs = await SharedPreferences.getInstance();
     final time =
         oauth.created_at?.toInt() ??
         DateTime.now().millisecondsSinceEpoch ~/ 1000;
     oauth.created_at = time;
-    await prefs.setInt('expires_in', oauth.expires_in?.toInt() ?? 0);
-    await prefs.setString('access_token', accessToken);
-    await prefs.setString('refresh_token', oauth.refresh_token ?? _oauth?.refresh_token ?? '');
-    await prefs.setString('scope', oauth.scope ?? '');
-    await prefs.setInt('created_at', time);
+    if (oauth.refresh_token == null || oauth.refresh_token!.isEmpty) {
+      oauth.refresh_token = _oauth?.refresh_token ?? '';
+    }
+    // 持久化到安全存储，避免 SharedPreferences 在 release 下失效导致登录态丢失。
+    await _secureStorage.write(key: _tokenKey, value: jsonEncode(oauth.toJson()));
     _oauth = oauth;
     _resetCreatedAt(time);
     Global.profile.oauth = oauth;
@@ -78,6 +94,7 @@ class OAuth {
       dio.options.headers.remove(HttpHeaders.authorizationHeader);
     }
     Global.netCache.cache.clear();
+    await _secureStorage.delete(key: _tokenKey);
     final prefs = await SharedPreferences.getInstance();
     for (final key in [
       'access_token',
