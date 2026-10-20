@@ -37,13 +37,20 @@ class _LaunchState extends State<LaunchWidget> {
   Future<void> _refreshUser() async {
     try {
       final user = await GiteeApi().userInfo();
+      User detail;
       try {
-        final detail = await GiteeApi().userDetail(user.login ?? '');
-        Global.profile.user = detail;
+        detail = await GiteeApi().userDetail(user.login ?? '');
       } catch (_) {
-        Global.profile.user = user;
+        detail = user;
       }
-      await Global.saveProfile();
+      final context = navigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        // 通过 UserModel 更新，触发 UI 刷新。
+        context.read<UserModel>().user = detail;
+      } else {
+        Global.profile.user = detail;
+        await Global.saveProfile();
+      }
     } catch (_) {
       // 刷新用户资料失败时保留本地缓存。
     }
